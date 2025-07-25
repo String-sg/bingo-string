@@ -1,1 +1,3 @@
-By @KOKHC @physicstjc
+# Bingo! 
+
+By @KOKHC @physicstjc - first developed on Claude
