@@ -74,16 +74,7 @@ class BingoApp {
             });
         }
 
-        // Preview modal events
-        const deleteBtn = document.getElementById('deleteBtn');
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', () => this.modalManager.deleteImage());
-        }
 
-        const confirmBtn = document.getElementById('confirmBtn');
-        if (confirmBtn) {
-            confirmBtn.addEventListener('click', () => this.handleImageConfirm());
-        }
 
         // Bingo modal events
         const celebrateBtn = document.getElementById('celebrateBtn');
@@ -145,6 +136,15 @@ class BingoApp {
         const cellImages = JSON.parse(localStorage.getItem('bingoCellImages') || '{}');
         cellImages[cellIndex] = imageData;
         localStorage.setItem('bingoCellImages', JSON.stringify(cellImages));
+
+        // Immediately apply the image to the cell
+        const cell = this.bingoGrid.cells[cellIndex];
+        if (cell) {
+            cell.style.backgroundImage = `url(${imageData})`;
+            cell.style.backgroundSize = 'cover';
+            cell.style.backgroundPosition = 'center';
+            cell.classList.add('has-image');
+        }
     }
 
     loadCellImages() {
@@ -156,6 +156,7 @@ class BingoApp {
                 cell.style.backgroundImage = `url(${imageData})`;
                 cell.style.backgroundSize = 'cover';
                 cell.style.backgroundPosition = 'center';
+                cell.classList.add('has-image');
             }
         });
     }
@@ -208,6 +209,7 @@ class BingoApp {
         const cell = this.bingoGrid.cells[cellIndex];
         if (cell) {
             cell.style.backgroundImage = '';
+            cell.classList.remove('has-image');
         }
 
         // Mark cell as incomplete
@@ -241,6 +243,7 @@ class BingoApp {
         // Remove background images from cells
         this.bingoGrid.cells.forEach(cell => {
             cell.style.backgroundImage = '';
+            cell.classList.remove('has-image');
         });
     }
 
