@@ -4,129 +4,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>String Bingo Game</title>
-    <meta name="description" content="Interactive String Bingo Game - Complete challenges and get BINGO!">
-    <meta name="theme-color" content="#75F8CC">
-    <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
-  <script type="module" crossorigin src="./assets/main-DjGhp-j_.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/main-bnki6tjW.css">
+    <title>String Bingo - Interactive Challenge Game</title>
+    <meta name="description" content="Complete String challenges and get BINGO! An interactive team bonding game.">
+    <meta name="keywords" content="bingo, game, string, interactive, challenges, team bonding">
+  <script type="module" crossorigin src="./assets/main-BgjsQ-Wn.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-kzwaj0Yg.css">
 </head>
 
 <body>
     <div class="header">
-        <h1>🎯 String Bingo</h1>
-        <p>Complete challenges and get BINGO!</p>
+        <h1>String Bingo</h1>
+        <p>Complete challenges and get BINGO! 🎯</p>
     </div>
 
     <div class="instructions">
-        <h2>How to Play</h2>
+        <p><strong>How to play:</strong></p>
         <ul>
-            <li>Tap any square to complete a challenge</li>
+            <li>Click on any square to complete a challenge</li>
             <li>Take a photo or upload an image as proof</li>
-            <li>Complete a row, column, or diagonal to get BINGO!</li>
-            <li>Celebrate your victory!</li>
+            <li>Complete 5 squares in a row (horizontal, vertical, or diagonal) to get BINGO!</li>
+            <li>Click a completed square to undo it</li>
         </ul>
-        <p><strong>Tip:</strong> Pinch to zoom and pan around the grid on mobile devices!</p>
     </div>
 
-    <!-- Loading State -->
-    <div id="loadingMessage" class="loading">
-        <p>🎲 Loading challenges...</p>
+    <div class="loading" id="loading">
+        Loading challenges...
     </div>
 
-    <!-- Error State -->
-    <div id="errorMessage" class="error" style="display: none;">
-        <p>❌ Failed to load the game. Please refresh and try again.</p>
-    </div>
-
-    <!-- Bingo Grid Container -->
     <div class="grid-container">
-        <div id="bingoGrid" class="bingo-grid" style="display: none;"></div>
+        <div class="bingo-grid" id="bingoGrid">
+            <!-- Grid will be populated by JavaScript -->
+        </div>
     </div>
 
-    <!-- Hidden file input for image uploads -->
-    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+    <div class="footer">
+        <button class="btn btn-secondary" id="resetBtn">Reset Game</button>
+        <p>Made with ❤️ by String Team</p>
+    </div>
 
-    <!-- Hidden canvas for camera capture -->
-    <canvas id="canvas" style="display: none;"></canvas>
-
-    <!-- Image Options Modal -->
+    <!-- Options Modal -->
     <div id="optionsModal" class="modal">
         <div class="modal-content">
+            <span class="close">&times;</span>
             <h2>Complete Challenge</h2>
-            <p>Choose how to add your proof:</p>
-            <div class="modal-buttons">
-                <button class="btn btn-primary" onclick="window.bingoApp?.modalManager?.showCameraModal()">
-                    📷 Take Photo
-                </button>
-                <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
-                    📁 Upload Image
-                </button>
-                <button class="btn btn-secondary" onclick="window.bingoApp?.modalManager?.closeModal('optionsModal')">
-                    ❌ Cancel
-                </button>
-            </div>
+            <p>How would you like to provide proof?</p>
+            <button class="btn btn-primary" id="cameraBtn">📷 Take Photo</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📁 Upload
+                Image</button>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
         </div>
     </div>
 
     <!-- Camera Modal -->
     <div id="cameraModal" class="modal">
         <div class="modal-content">
-            <h2>📷 Take Photo</h2>
+            <span class="close">&times;</span>
+            <h2>Take Photo</h2>
             <div class="camera-container">
-                <video id="videoElement" autoplay playsinline muted></video>
+                <video id="video" autoplay playsinline></video>
             </div>
-            <div class="camera-controls">
-                <button class="btn btn-primary" onclick="window.bingoApp?.modalManager?.capturePhoto()">
-                    📸 Capture
-                </button>
-                <button class="btn btn-secondary" onclick="window.bingoApp?.cameraManager?.switchCamera()">
-                    🔄 Switch Camera
-                </button>
-                <button class="btn btn-secondary" onclick="window.bingoApp?.modalManager?.closeModal('cameraModal')">
-                    ❌ Cancel
-                </button>
-            </div>
+            <button class="btn btn-primary" id="captureBtn">📸 Capture</button>
+            <button class="btn btn-secondary" id="switchCameraBtn">🔄 Switch Camera</button>
         </div>
     </div>
 
-    <!-- Image Preview Modal -->
+    <!-- Preview Modal -->
     <div id="previewModal" class="modal">
-        <div class="preview-content">
-            <img id="previewImage" class="preview-image" alt="Challenge proof">
-            <div style="margin-top: 20px;">
-                <button class="btn btn-danger" onclick="window.bingoApp?.modalManager?.deleteImage()">
-                    🗑️ Delete
-                </button>
-                <button class="btn btn-secondary" onclick="window.bingoApp?.modalManager?.closeModal('previewModal')">
-                    ❌ Close
-                </button>
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Preview Image</h2>
+            <div class="preview-container">
+                <img id="previewImage" class="preview-image" alt="Preview">
             </div>
+            <button class="btn btn-primary" id="confirmBtn">✅ Confirm</button>
+            <button class="btn btn-secondary" id="deleteBtn">🗑️ Delete</button>
         </div>
     </div>
 
     <!-- Bingo Modal -->
     <div id="bingoModal" class="modal">
         <div class="modal-content">
-            <h2>🎉 BINGO!</h2>
+            <span class="close">&times;</span>
+            <h2>🎉 BINGO! 🎉</h2>
             <p>Congratulations! You've completed a line!</p>
-            <p>You've successfully completed all the challenges in a row, column, or diagonal.</p>
-            <div class="modal-buttons">
-                <button class="btn btn-primary" onclick="window.bingoApp?.modalManager?.closeModal('bingoModal')">
-                    🎊 Celebrate!
-                </button>
-            </div>
+            <p>You've successfully completed 5 challenges in a row!</p>
+            <button class="btn btn-primary" id="celebrateBtn">🎊 Celebrate!</button>
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer>
-        <p>Made with ❤️ by String Team</p>
-        <p><small>Interactive Bingo Game</small></p>
-    </footer>
+    <!-- Status Messages -->
+    <div class="status" id="status"></div>
 
-    <!-- Load the main application -->
 </body>
 
 </html>
