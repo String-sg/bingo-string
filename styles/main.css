@@ -110,10 +110,10 @@ body {
     background: rgba(255, 255, 255, 0.9);
     padding: 12px;
     text-align: center;
-    min-height: 80px;
+    height: 120px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     border-radius: 8px;
     transition: all var(--transition-medium);
@@ -134,7 +134,8 @@ body {
     font-size: 0.8em;
     color: var(--text-dark);
     font-weight: 600;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    margin-top: 0;
 }
 
 .cell-text {
