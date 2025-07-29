@@ -2,7 +2,7 @@
     "name": "string-bingo",
     "version": "1.0.0",
     "description": "Interactive String Bingo Game - Complete challenges and get BINGO!",
-    "main": "index-new.html",
+    "main": "index.html",
     "scripts": {
         "dev": "vite",
         "build": "vite build",
