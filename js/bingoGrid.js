@@ -57,6 +57,7 @@ export class BingoGrid {
     setCellIncomplete(index) {
         if (index >= 0 && index < this.cells.length) {
             this.cells[index].classList.remove('completed');
+            this.cells[index].style.backgroundImage = '';
             this.completedCells.delete(index);
             this.removeBingoHighlight();
         }

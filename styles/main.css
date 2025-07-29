@@ -156,6 +156,7 @@ body {
 .completed {
     border: 3px solid var(--primary-color);
     background: rgba(117, 248, 204, 0.1);
+    position: relative;
 }
 
 .completed .cell-number {
@@ -164,6 +165,34 @@ body {
     padding: 2px 6px;
     border-radius: 4px;
     font-weight: 600;
+    position: relative;
+    z-index: 2;
+}
+
+.completed .cell-text {
+    position: relative;
+    z-index: 2;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    color: white;
+    font-weight: 600;
+}
+
+/* When cell has a background image */
+.completed[style*="background-image"] {
+    background: rgba(0, 0, 0, 0.3) !important;
+}
+
+.completed[style*="background-image"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: inherit;
+    background-size: cover;
+    background-position: center;
+    z-index: 1;
 }
 
 .bingo-line {
@@ -240,6 +269,17 @@ body {
 
 .btn-secondary:hover {
     background: #A8E8F0;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+}
+
+.btn-danger {
+    background: #f44336;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #d32f2f;
     transform: translateY(-1px);
     box-shadow: var(--shadow-medium);
 }

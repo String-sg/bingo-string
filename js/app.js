@@ -20,6 +20,7 @@ class BingoApp {
             await this.setupGrid();
             this.setupEventListeners();
             this.setupTouchManager();
+            this.loadCellImages(); // Load saved images on startup
         } catch (error) {
             console.error('Failed to initialize app:', error);
             this.showError('Failed to load the game. Please refresh the page.');
@@ -109,8 +110,8 @@ class BingoApp {
         const isCompleted = cell.classList.contains('completed');
 
         if (isCompleted) {
-            // If already completed, mark as incomplete
-            this.bingoGrid.setCellIncomplete(index);
+            // If already completed, show the photo in a modal
+            this.showPhotoModal(index);
         } else {
             // Show options modal for completion
             this.modalManager.showOptionsModal(index);
@@ -157,6 +158,63 @@ class BingoApp {
                 cell.style.backgroundPosition = 'center';
             }
         });
+    }
+
+    showPhotoModal(cellIndex) {
+        const cellImages = JSON.parse(localStorage.getItem('bingoCellImages') || '{}');
+        const imageData = cellImages[cellIndex];
+
+        if (imageData) {
+            // Create a modal to show the photo
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'block';
+
+            const challenge = this.challengeLoader.getChallenge(cellIndex);
+            const challengeText = challenge ? challenge.text : `Challenge ${cellIndex + 1}`;
+
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                    <h2>${challengeText}</h2>
+                    <div class="preview-container">
+                        <img src="${imageData}" class="preview-image" alt="Challenge proof">
+                    </div>
+                    <div style="margin-top: 20px; text-align: center;">
+                        <button class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Close</button>
+                        <button class="btn btn-danger" onclick="window.bingoApp.removeCellImage(${cellIndex})">Remove Photo</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Close modal when clicking outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+    }
+
+    removeCellImage(cellIndex) {
+        // Remove from localStorage
+        const cellImages = JSON.parse(localStorage.getItem('bingoCellImages') || '{}');
+        delete cellImages[cellIndex];
+        localStorage.setItem('bingoCellImages', JSON.stringify(cellImages));
+
+        // Remove background image from cell
+        const cell = this.bingoGrid.cells[cellIndex];
+        if (cell) {
+            cell.style.backgroundImage = '';
+        }
+
+        // Mark cell as incomplete
+        this.bingoGrid.setCellIncomplete(cellIndex);
+
+        // Close modal
+        document.querySelector('.modal').remove();
     }
 
     handleBingo() {
@@ -209,5 +267,5 @@ class BingoApp {
 
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new BingoApp();
+    window.bingoApp = new BingoApp();
 }); 
