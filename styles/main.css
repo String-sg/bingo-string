@@ -388,6 +388,7 @@ body {
     .bingo-cell {
         height: 100px;
         padding: 8px;
+        justify-content: flex-start;
     }
 
     .cell-text {
