@@ -220,6 +220,8 @@ body {
     border-radius: 15px;
     width: 90%;
     max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
     position: relative;
     box-shadow: var(--shadow-heavy);
 }
@@ -314,13 +316,25 @@ body {
 .camera-container {
     text-align: center;
     margin: 20px 0;
+    max-height: 60vh;
+    overflow: hidden;
 }
 
 #video {
     width: 100%;
     max-width: 400px;
+    max-height: 50vh;
     border-radius: 10px;
     box-shadow: var(--shadow-medium);
+    object-fit: cover;
+}
+
+.camera-controls {
+    margin-top: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
 }
 
 .preview-container {
@@ -374,7 +388,7 @@ body {
     }
 
     .bingo-cell {
-        min-height: 60px;
+        height: 100px;
         padding: 8px;
     }
 
@@ -383,8 +397,30 @@ body {
     }
 
     .modal-content {
-        margin: 10% auto;
+        margin: 5% auto;
         width: 95%;
+        max-height: 85vh;
+        padding: 15px;
+    }
+
+    .camera-container {
+        max-height: 50vh;
+        margin: 10px 0;
+    }
+
+    #video {
+        max-height: 40vh;
+        max-width: 100%;
+    }
+
+    .camera-controls {
+        margin-top: 10px;
+    }
+
+    .camera-controls .btn {
+        padding: 12px 16px;
+        margin: 5px;
+        font-size: 0.9em;
     }
 }
 
