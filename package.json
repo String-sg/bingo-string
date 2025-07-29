@@ -1,0 +1,27 @@
+{
+    "name": "string-bingo",
+    "version": "1.0.0",
+    "description": "Interactive String Bingo Game - Complete challenges and get BINGO!",
+    "main": "index-new.html",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "deploy": "npm run build && gh-pages -d dist"
+    },
+    "keywords": [
+        "bingo",
+        "game",
+        "string",
+        "interactive",
+        "challenges"
+    ],
+    "author": "String Team",
+    "license": "MIT",
+    "devDependencies": {
+        "vite": "^5.0.0",
+        "gh-pages": "^6.0.0"
+    },
+    "dependencies": {
+        "modern-normalize": "^2.0.0"
+    }
+}
