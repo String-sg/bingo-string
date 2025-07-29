@@ -4,24 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>String Bingo - Interactive Challenge Game</title>
+    <title>String - Bingo</title>
     <meta name="description" content="Complete String challenges and get BINGO! An interactive team bonding game.">
     <meta name="keywords" content="bingo, game, string, interactive, challenges, team bonding">
     <link rel="stylesheet" href="styles/main.css">
 </head>
 
 <body>
-    <div class="header">
-        <h1>String Bingo</h1>
-        <p>Complete challenges and get BINGO! 🎯</p>
-    </div>
-
-
-
-    <div class="loading" id="loading">
-        Loading challenges...
-    </div>
-
     <div class="grid-container">
         <div class="bingo-grid" id="bingoGrid">
             <!-- Grid will be populated by JavaScript -->
@@ -59,18 +48,7 @@
         </div>
     </div>
 
-    <!-- Preview Modal -->
-    <div id="previewModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Preview Image</h2>
-            <div class="preview-container">
-                <img id="previewImage" class="preview-image" alt="Preview">
-            </div>
-            <button class="btn btn-primary" id="confirmBtn">✅ Confirm</button>
-            <button class="btn btn-secondary" id="deleteBtn">🗑️ Delete</button>
-        </div>
-    </div>
+
 
     <!-- Bingo Modal -->
     <div id="bingoModal" class="modal">
