@@ -68,7 +68,7 @@ export class ModalManager {
         try {
             this.currentImageData = await this.cameraManager.handleFileUpload(file);
             this.currentImageData = await this.cameraManager.resizeImage(this.currentImageData);
-            this.showPreviewModal();
+            this.confirmImage();
         } catch (error) {
             console.error('File upload error:', error);
             this.showStatus('Failed to upload file. Please try again.', 'error');
@@ -79,20 +79,20 @@ export class ModalManager {
         try {
             this.currentImageData = this.cameraManager.capturePhoto();
             this.currentImageData = await this.cameraManager.resizeImage(this.currentImageData);
-            this.showPreviewModal();
+            this.confirmImage();
         } catch (error) {
             console.error('Photo capture error:', error);
             this.showStatus('Failed to capture photo. Please try again.', 'error');
         }
     }
 
-    showPreviewModal() {
+    confirmImage() {
+        // Immediately process the image without showing preview modal
         this.closeModal();
-        this.showModal('previewModal');
 
-        const previewImage = document.getElementById('previewImage');
-        if (previewImage) {
-            previewImage.src = this.currentImageData;
+        // Trigger the image confirmation in the main app
+        if (window.bingoApp) {
+            window.bingoApp.handleImageConfirm();
         }
     }
 
