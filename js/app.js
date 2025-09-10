@@ -151,6 +151,15 @@ class BingoApp {
             cell.style.backgroundPosition = 'center';
             cell.classList.add('has-image');
         }
+
+        // Track photo taken event in Google Analytics
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'photo_taken', {
+                'event_category': 'engagement',
+                'event_label': `cell_${cellIndex}`,
+                'value': 1
+            });
+        }
     }
 
     loadCellImages() {
