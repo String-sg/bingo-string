@@ -297,6 +297,15 @@ class BingoApp {
             const challenge = this.challengeLoader.getChallenge(parseInt(index));
             const challengeText = challenge ? challenge.text : `Challenge ${parseInt(index) + 1}`;
             this.downloadSingleImage(imageData, `bingo-${parseInt(index) + 1}-${challengeText.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`);
+            
+            // Track download event in Google Analytics
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'download_images', {
+                    'event_category': 'engagement',
+                    'event_label': 'single_image',
+                    'value': 1
+                });
+            }
             return;
         }
 
@@ -326,6 +335,15 @@ class BingoApp {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+
+            // Track download event in Google Analytics
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'download_images', {
+                    'event_category': 'engagement',
+                    'event_label': 'zip_file',
+                    'value': imageEntries.length
+                });
+            }
         } catch (error) {
             console.error('Error downloading images:', error);
             alert('Error downloading images. Please try again.');
