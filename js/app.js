@@ -87,6 +87,12 @@ class BingoApp {
         if (resetBtn) {
             resetBtn.addEventListener('click', () => this.reset());
         }
+
+        // Download all images button
+        const downloadBtn = document.getElementById('downloadBtn');
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', () => this.downloadAllImages());
+        }
     }
 
     setupTouchManager() {
@@ -265,6 +271,79 @@ class BingoApp {
             total: 25,
             percentage: Math.round((completedCells.length / 25) * 100)
         };
+    }
+
+    async downloadAllImages() {
+        const cellImages = JSON.parse(localStorage.getItem('bingoCellImages') || '{}');
+        const imageEntries = Object.entries(cellImages);
+        
+        if (imageEntries.length === 0) {
+            alert('No images to download. Complete some challenges first!');
+            return;
+        }
+
+        // For a single image, download directly
+        if (imageEntries.length === 1) {
+            const [index, imageData] = imageEntries[0];
+            const challenge = this.challengeLoader.getChallenge(parseInt(index));
+            const challengeText = challenge ? challenge.text : `Challenge ${parseInt(index) + 1}`;
+            this.downloadSingleImage(imageData, `bingo-${parseInt(index) + 1}-${challengeText.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`);
+            return;
+        }
+
+        // For multiple images, create ZIP
+        try {
+            const JSZip = await this.loadJSZip();
+            const zip = new JSZip();
+
+            for (const [index, imageData] of imageEntries) {
+                const challenge = this.challengeLoader.getChallenge(parseInt(index));
+                const challengeText = challenge ? challenge.text : `Challenge ${parseInt(index) + 1}`;
+                const filename = `bingo-${parseInt(index) + 1}-${challengeText.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`;
+                
+                // Convert data URL to blob
+                const response = await fetch(imageData);
+                const blob = await response.blob();
+                zip.file(filename, blob);
+            }
+
+            // Generate ZIP and download
+            const zipBlob = await zip.generateAsync({type: 'blob'});
+            const url = URL.createObjectURL(zipBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bingo-images.zip';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error downloading images:', error);
+            alert('Error downloading images. Please try again.');
+        }
+    }
+
+    downloadSingleImage(imageData, filename) {
+        const a = document.createElement('a');
+        a.href = imageData;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    async loadJSZip() {
+        if (window.JSZip) {
+            return window.JSZip;
+        }
+
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+            script.onload = () => resolve(window.JSZip);
+            script.onerror = () => reject(new Error('Failed to load JSZip'));
+            document.head.appendChild(script);
+        });
     }
 }
 
