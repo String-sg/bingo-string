@@ -210,9 +210,28 @@ export class AuthManager {
         }
     }
 
-    redirectToAdmin() {
-        // For now, just show an alert. In PR 2, this will redirect to admin dashboard
-        alert(`Welcome ${this.user.name}! Admin dashboard coming in PR 2.`);
+    async redirectToAdmin() {
+        // Call backend to ensure user is created/updated
+        try {
+            const response = await fetch(`${CONFIG.API_BASE_URL}/auth/login`, {
+                method: 'POST',
+                headers: this.getAuthHeaders()
+            });
+
+            if (response.ok) {
+                const userData = await response.json();
+                console.log('User synced with backend:', userData);
+
+                // For now, show success message. Later will redirect to admin dashboard
+                alert(`Welcome ${this.user.name}! Admin dashboard coming soon.`);
+            } else {
+                console.error('Failed to sync user with backend');
+                alert(`Welcome ${this.user.name}! Note: Backend sync failed.`);
+            }
+        } catch (error) {
+            console.error('Error syncing with backend:', error);
+            alert(`Welcome ${this.user.name}! Note: Backend connection failed.`);
+        }
     }
 
     showError(message) {
