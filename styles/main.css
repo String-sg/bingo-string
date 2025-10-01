@@ -122,7 +122,7 @@ body {
     background-position: center;
     background-repeat: no-repeat;
     color: var(--text-dark);
-    min-height: 0;
+    min-height: 120px;
 }
 
 .bingo-cell:hover {
@@ -411,7 +411,7 @@ body {
     .bingo-cell {
         padding: 8px;
         justify-content: flex-start;
-        min-height: 0;
+        min-height: 110px;
     }
 
     .cell-text {
@@ -450,7 +450,7 @@ body {
 /* Touch-friendly improvements */
 @media (hover: none) and (pointer: coarse) {
     .bingo-cell {
-        min-height: 0;
+        min-height: 90px;
         padding: 10px 8px;
     }
 
