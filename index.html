@@ -17,6 +17,9 @@
         gtag('js', new Date());
         gtag('config', 'G-NM42QYT2MD');
     </script>
+
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body>
@@ -27,10 +30,17 @@
     </div>
 
     <div class="footer">
-        <button class="btn btn-secondary" id="resetBtn">Reset Game</button>
-        <button class="btn btn-primary" id="downloadBtn">📥 Download All Images</button>
+        <button class="btn btn-secondary" id="resetBtn">Reset</button>
+        <button class="btn btn-primary" id="downloadBtn">Download Images</button>
+        <div id="userInfo" style="display: none; margin: 10px 0;">
+            <img id="userAvatar" style="width: 32px; height: 32px; border-radius: 50%; margin-right: 8px;">
+            <span id="userName"></span>
+            <button class="btn btn-secondary" id="logoutBtn" style="margin-left: 10px;">Logout</button>
+        </div>
         <p>Made with ❤️ by <a href="https://for.edu.sg/str-bingo-tree" target="_blank">String Team</a></p>
         <p style="font-size: 0.7em; color: #666; margin-top: 10px;">For Samsung GenAI for Educators Community Event 2025 9.10</p>
+        <button class="btn btn-outline" id="authBtn">🎯 Make Your Own</button>
+        <button class="btn btn-outline" id="makeYourOwnBtn" style="display: none;">🎯 Make Your Own</button>
     </div>
 
     <!-- Options Modal -->
@@ -54,8 +64,12 @@
             <div class="camera-container">
                 <video id="video" autoplay playsinline></video>
             </div>
-            <button class="btn btn-primary" id="captureBtn">📸 Capture</button>
-            <button class="btn btn-secondary" id="switchCameraBtn">🔄 Switch Camera</button>
+            <div class="camera-controls">
+                <button class="btn btn-primary" id="captureBtn">📸 Capture</button>
+                <button class="btn btn-secondary" id="switchCameraBtn">🔄 Switch Camera</button>
+                <button class="btn btn-outline" id="uploadBtn">📁 Upload Image</button>
+                <input type="file" id="cameraFileInput" accept="image/*" style="display: none;">
+            </div>
         </div>
     </div>
 
@@ -69,6 +83,19 @@
             <p>Congratulations! You've completed a line!</p>
             <p>You've successfully completed 5 challenges in a row!</p>
             <button class="btn btn-primary" id="celebrateBtn">🎊 Celebrate!</button>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>🎯 Create Your Own Bingo</h2>
+            <p>Sign in with Google to create and manage your own custom bingo games</p>
+            <div id="googleSignInBtn" style="margin: 20px 0; text-align: center;"></div>
+            <p style="font-size: 0.9em; color: #666; margin-top: 20px;">
+                By signing in, you can create unlimited custom bingo games and share them with your teams.
+            </p>
         </div>
     </div>
 

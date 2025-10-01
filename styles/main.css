@@ -33,7 +33,7 @@ body {
     font-family: var(--font-body);
     max-width: 800px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 30px 20px 20px 20px;
     background: var(--background-color);
     min-height: 100vh;
     color: var(--text-primary);
@@ -110,7 +110,6 @@ body {
     background: rgba(255, 255, 255, 0.9);
     padding: 12px;
     text-align: center;
-    height: 120px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -123,6 +122,7 @@ body {
     background-position: center;
     background-repeat: no-repeat;
     color: var(--text-dark);
+    min-height: 120px;
 }
 
 .bingo-cell:hover {
@@ -284,6 +284,19 @@ body {
     box-shadow: var(--shadow-medium);
 }
 
+.btn-outline {
+    background: transparent;
+    color: var(--text-primary);
+    border: 2px solid var(--primary-color);
+}
+
+.btn-outline:hover {
+    background: var(--primary-color);
+    color: var(--text-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+}
+
 .form-group {
     margin-bottom: 15px;
 }
@@ -314,14 +327,15 @@ body {
 .camera-container {
     text-align: center;
     margin: 20px 0;
-    max-height: 60vh;
+    max-height: 70vh;
     overflow: hidden;
 }
 
 #video {
     width: 100%;
     max-width: 400px;
-    max-height: 50vh;
+    max-height: 65vh;
+    min-height: 300px;
     border-radius: 10px;
     box-shadow: var(--shadow-medium);
     object-fit: cover;
@@ -395,13 +409,13 @@ body {
     }
 
     .bingo-cell {
-        height: 100px;
         padding: 8px;
         justify-content: flex-start;
+        min-height: 110px;
     }
 
     .cell-text {
-        font-size: 0.6em;
+        font-size: 0.66em;
     }
 
     .modal-content {
@@ -412,12 +426,13 @@ body {
     }
 
     .camera-container {
-        max-height: 50vh;
+        max-height: 60vh;
         margin: 10px 0;
     }
 
     #video {
-        max-height: 40vh;
+        max-height: 55vh;
+        min-height: 250px;
         max-width: 100%;
     }
 
@@ -435,7 +450,8 @@ body {
 /* Touch-friendly improvements */
 @media (hover: none) and (pointer: coarse) {
     .bingo-cell {
-        min-height: 70px;
+        min-height: 90px;
+        padding: 10px 8px;
     }
 
     .btn {

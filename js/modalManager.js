@@ -52,7 +52,11 @@ export class ModalManager {
         this.showModal('optionsModal');
     }
 
-    async showCameraModal() {
+    async showCameraModal(cellIndex = null) {
+        if (cellIndex !== null) {
+            this.currentCellIndex = cellIndex;
+        }
+
         this.showModal('cameraModal');
 
         const video = document.getElementById('video');
