@@ -3,6 +3,7 @@ import { BingoGrid } from './bingoGrid.js';
 import { CameraManager } from './cameraManager.js';
 import { TouchManager } from './touchManager.js';
 import { ModalManager } from './modalManager.js';
+import { AuthManager } from './authManager.js';
 
 class BingoApp {
     constructor() {
