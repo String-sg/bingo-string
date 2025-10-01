@@ -1,4 +1,13 @@
 export const CONFIG = {
+    // Google OAuth Configuration
+    GOOGLE_CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID_HERE',
+
+    // API Configuration (for future backend integration)
+    API_BASE_URL: 'http://localhost:3000/api',
+
+    // Session Configuration
+    SESSION_TIMEOUT: 24 * 60 * 60 * 1000, // 24 hours
+
     // Camera settings
     CAMERA: {
         width: { ideal: 1280 },

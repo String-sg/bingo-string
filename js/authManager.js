@@ -1,9 +1,11 @@
+import { CONFIG } from './config.js';
+
 export class AuthManager {
     constructor() {
         this.user = null;
         this.isAuthenticated = false;
         this.googleAuth = null;
-        this.clientId = null; // Will be set via config
+        this.clientId = CONFIG.GOOGLE_CLIENT_ID;
 
         this.init();
     }
@@ -48,8 +50,10 @@ export class AuthManager {
     }
 
     async initializeGoogleAuth() {
-        // TODO: Replace with your actual Google OAuth Client ID
-        this.clientId = 'YOUR_GOOGLE_CLIENT_ID';
+        if (!this.clientId || this.clientId === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+            console.warn('Google Client ID not configured. Please update CONFIG.GOOGLE_CLIENT_ID in config.js');
+            return;
+        }
 
         window.google.accounts.id.initialize({
             client_id: this.clientId,
@@ -138,9 +142,8 @@ export class AuthManager {
             if (stored) {
                 const session = JSON.parse(stored);
 
-                // Check if session is less than 24 hours old
-                const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-                if (Date.now() - session.timestamp < maxAge) {
+                // Check if session is still valid
+                if (Date.now() - session.timestamp < CONFIG.SESSION_TIMEOUT) {
                     this.user = session.user;
                     this.isAuthenticated = true;
                     this.updateUI();

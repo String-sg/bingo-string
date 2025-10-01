@@ -12,6 +12,7 @@ class BingoApp {
         this.cameraManager = new CameraManager();
         this.touchManager = null;
         this.modalManager = new ModalManager(this.cameraManager);
+        this.authManager = new AuthManager();
 
         this.init();
     }
@@ -49,11 +50,6 @@ class BingoApp {
         });
 
         // Camera modal events
-        const cameraBtn = document.getElementById('cameraBtn');
-        if (cameraBtn) {
-            cameraBtn.addEventListener('click', () => this.modalManager.showCameraModal());
-        }
-
         const switchCameraBtn = document.getElementById('switchCameraBtn');
         if (switchCameraBtn) {
             switchCameraBtn.addEventListener('click', () => this.cameraManager.switchCamera());
@@ -64,10 +60,18 @@ class BingoApp {
             captureBtn.addEventListener('click', () => this.modalManager.capturePhoto());
         }
 
-        // File upload
-        const fileInput = document.getElementById('fileInput');
-        if (fileInput) {
-            fileInput.addEventListener('change', (e) => {
+        // Upload button in camera modal
+        const uploadBtn = document.getElementById('uploadBtn');
+        if (uploadBtn) {
+            uploadBtn.addEventListener('click', () => {
+                document.getElementById('cameraFileInput').click();
+            });
+        }
+
+        // File upload from camera modal
+        const cameraFileInput = document.getElementById('cameraFileInput');
+        if (cameraFileInput) {
+            cameraFileInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (file) {
                     this.modalManager.handleFileUpload(file);
@@ -94,6 +98,34 @@ class BingoApp {
         if (downloadBtn) {
             downloadBtn.addEventListener('click', () => this.downloadAllImages());
         }
+
+        // Auth related buttons
+        const authBtn = document.getElementById('authBtn');
+        if (authBtn) {
+            authBtn.addEventListener('click', () => this.authManager.showAuthModal());
+        }
+
+        const makeYourOwnBtn = document.getElementById('makeYourOwnBtn');
+        if (makeYourOwnBtn) {
+            makeYourOwnBtn.addEventListener('click', () => this.authManager.redirectToAdmin());
+        }
+
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => this.authManager.logout());
+        }
+
+        // Auth modal close button
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('close') && e.target.closest('#authModal')) {
+                this.authManager.closeAuthModal();
+            }
+
+            // Close auth modal when clicking outside
+            if (e.target.id === 'authModal') {
+                this.authManager.closeAuthModal();
+            }
+        });
     }
 
     setupTouchManager() {
@@ -111,8 +143,8 @@ class BingoApp {
             // If already completed, show the photo in a modal
             this.showPhotoModal(index);
         } else {
-            // Show options modal for completion
-            this.modalManager.showOptionsModal(index);
+            // Directly start camera for completion
+            this.modalManager.showCameraModal(index);
         }
     }
 

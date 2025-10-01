@@ -284,6 +284,19 @@ body {
     box-shadow: var(--shadow-medium);
 }
 
+.btn-outline {
+    background: transparent;
+    color: var(--text-primary);
+    border: 2px solid var(--primary-color);
+}
+
+.btn-outline:hover {
+    background: var(--primary-color);
+    color: var(--text-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+}
+
 .form-group {
     margin-bottom: 15px;
 }

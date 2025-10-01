@@ -32,15 +32,15 @@
     <div class="footer">
         <button class="btn btn-secondary" id="resetBtn">Reset Game</button>
         <button class="btn btn-primary" id="downloadBtn">📥 Download All Images</button>
-        <button class="btn btn-primary" id="makeYourOwnBtn" style="display: none;">🎯 Make Your Own</button>
         <div id="userInfo" style="display: none; margin: 10px 0;">
             <img id="userAvatar" style="width: 32px; height: 32px; border-radius: 50%; margin-right: 8px;">
             <span id="userName"></span>
             <button class="btn btn-secondary" id="logoutBtn" style="margin-left: 10px;">Logout</button>
         </div>
         <p>Made with ❤️ by <a href="https://for.edu.sg/str-bingo-tree" target="_blank">String Team</a></p>
-        <button class="btn btn-secondary" id="authBtn">🎯 Make Your Own</button>
         <p style="font-size: 0.7em; color: #666; margin-top: 10px;">For Samsung GenAI for Educators Community Event 2025 9.10</p>
+        <button class="btn btn-outline" id="authBtn">🎯 Make Your Own</button>
+        <button class="btn btn-outline" id="makeYourOwnBtn" style="display: none;">🎯 Make Your Own</button>
     </div>
 
     <!-- Options Modal -->
@@ -64,8 +64,12 @@
             <div class="camera-container">
                 <video id="video" autoplay playsinline></video>
             </div>
-            <button class="btn btn-primary" id="captureBtn">📸 Capture</button>
-            <button class="btn btn-secondary" id="switchCameraBtn">🔄 Switch Camera</button>
+            <div class="camera-controls">
+                <button class="btn btn-primary" id="captureBtn">📸 Capture</button>
+                <button class="btn btn-secondary" id="switchCameraBtn">🔄 Switch Camera</button>
+                <button class="btn btn-outline" id="uploadBtn">📁 Upload Image</button>
+                <input type="file" id="cameraFileInput" accept="image/*" style="display: none;">
+            </div>
         </div>
     </div>
 
