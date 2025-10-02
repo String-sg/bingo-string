@@ -36,5 +36,5 @@ export const CONFIG = {
     },
 
     // Challenge file
-    CHALLENGE_FILE: '2oct2025str.csv'
+    CHALLENGE_FILE: '2025_910samsung_bingo_challenges.csv'
 }; 
