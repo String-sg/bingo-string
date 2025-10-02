@@ -221,15 +221,17 @@ export class AuthManager {
             if (response.ok) {
                 const userData = await response.json();
                 console.log('User synced with backend:', userData);
+
+                // For now, show success message. Later will redirect to admin dashboard
+                alert(`Welcome ${this.user.name}! Admin dashboard coming soon.`);
             } else {
                 console.error('Failed to sync user with backend');
+                alert(`Welcome ${this.user.name}! Note: Backend sync failed.`);
             }
         } catch (error) {
             console.error('Error syncing with backend:', error);
+            alert(`Welcome ${this.user.name}! Note: Backend connection failed.`);
         }
-
-        // Redirect to admin dashboard
-        window.location.href = '/admin.html';
     }
 
     showError(message) {
