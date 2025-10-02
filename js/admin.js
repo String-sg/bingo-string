@@ -67,8 +67,15 @@ class AdminDashboard {
         document.getElementById('createGameForm')?.addEventListener('submit', (e) => this.handleCreateGame(e));
         document.getElementById('cancelCreateBtn')?.addEventListener('click', () => this.hideCreateGameModal());
 
+        // Edit game form
+        document.getElementById('editGameForm')?.addEventListener('submit', (e) => this.handleEditGame(e));
+        document.getElementById('cancelEditBtn')?.addEventListener('click', () => this.hideEditGameModal());
+
         // Generate sample challenges
         document.getElementById('generateSampleBtn')?.addEventListener('click', () => this.generateSampleChallenges());
+
+        // Load from CSV
+        document.getElementById('loadFromCsvBtn')?.addEventListener('click', () => this.loadChallengesFromCsv());
 
         // Logout
         document.getElementById('adminLogoutBtn')?.addEventListener('click', () => this.logout());
@@ -87,7 +94,7 @@ class AdminDashboard {
         });
     }
 
-    setupChallengesGrid() {
+    async setupChallengesGrid() {
         const grid = document.getElementById('challengesGrid');
         if (!grid) return;
 
@@ -106,6 +113,9 @@ class AdminDashboard {
 
             grid.appendChild(textarea);
         }
+
+        // Auto-load challenges from CSV by default
+        await this.loadChallengesFromCsv();
     }
 
     generateSampleChallenges() {
@@ -145,6 +155,54 @@ class AdminDashboard {
         });
     }
 
+    async loadChallengesFromCsv() {
+        try {
+            const response = await fetch(`/${CONFIG.CHALLENGE_FILE}`);
+            if (!response.ok) {
+                throw new Error('Failed to load CSV file');
+            }
+
+            const csvText = await response.text();
+            const challenges = this.parseCsvChallenges(csvText);
+
+            const inputs = document.querySelectorAll('.challenge-input');
+            inputs.forEach((input, index) => {
+                if (index < challenges.length) {
+                    input.value = challenges[index];
+                }
+            });
+
+            this.showSuccess('Challenges loaded from CSV successfully!');
+        } catch (error) {
+            console.error('Error loading CSV:', error);
+            this.showError('Failed to load challenges from CSV file.');
+        }
+    }
+
+    parseCsvChallenges(csvText) {
+        const lines = csvText.trim().split('\n');
+        const challenges = [];
+
+        lines.forEach(line => {
+            // Find the first comma to split number from description
+            const commaIndex = line.indexOf(',');
+            if (commaIndex !== -1) {
+                // Get everything after the first comma
+                let challenge = line.substring(commaIndex + 1).trim();
+                // Remove outer quotes if they exist
+                challenge = challenge.replace(/^["'](.*)["']$/, '$1');
+                challenges.push(challenge);
+            }
+        });
+
+        // Ensure we have exactly 25 challenges
+        while (challenges.length < 25) {
+            challenges.push('');
+        }
+
+        return challenges.slice(0, 25);
+    }
+
     async loadGames() {
         try {
             this.showLoading();
@@ -182,17 +240,23 @@ class AdminDashboard {
         const loadingState = document.getElementById('loadingState');
         const emptyState = document.getElementById('emptyState');
         const gamesGrid = document.getElementById('gamesGrid');
+        const dashboardSummary = document.getElementById('dashboardSummary');
 
         loadingState.style.display = 'none';
 
         if (this.games.length === 0) {
             emptyState.style.display = 'block';
             gamesGrid.style.display = 'none';
+            dashboardSummary.style.display = 'none';
             return;
         }
 
         emptyState.style.display = 'none';
         gamesGrid.style.display = 'grid';
+        dashboardSummary.style.display = 'grid';
+
+        // Update statistics
+        this.updateDashboardStats();
 
         gamesGrid.innerHTML = '';
 
@@ -209,6 +273,7 @@ class AdminDashboard {
 
         const createdDate = new Date(game.createdAt).toLocaleDateString();
         const gameUrl = `${window.location.origin}/play/${game.id}`;
+        const timeAgo = this.getTimeAgo(game.createdAt);
 
         card.innerHTML = `
             <div class="game-card-header">
@@ -218,7 +283,7 @@ class AdminDashboard {
                 </span>
             </div>
             <div class="game-card-meta">
-                Created ${createdDate} • 25 challenges
+                Created ${timeAgo} • ${createdDate} • 25 challenges
             </div>
             <div class="game-card-url">
                 ${gameUrl}
@@ -235,6 +300,25 @@ class AdminDashboard {
         `;
 
         return card;
+    }
+
+    updateDashboardStats() {
+        const totalGames = this.games.length;
+        const publicGames = this.games.filter(game => game.isPublic).length;
+        const privateGames = totalGames - publicGames;
+
+        // Calculate games created this week
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        const recentGames = this.games.filter(game =>
+            new Date(game.createdAt) > oneWeekAgo
+        ).length;
+
+        // Update UI
+        document.getElementById('totalGames').textContent = totalGames;
+        document.getElementById('publicGames').textContent = publicGames;
+        document.getElementById('privateGames').textContent = privateGames;
+        document.getElementById('recentGames').textContent = recentGames;
     }
 
     showCreateGameModal() {
@@ -321,8 +405,12 @@ class AdminDashboard {
     }
 
     editGame() {
-        // TODO: Implement edit functionality
-        this.showError('Edit functionality coming soon!');
+        if (!this.currentGameId) return;
+
+        const game = this.games.find(g => g.id === this.currentGameId);
+        if (!game) return;
+
+        this.showEditGameModal(game);
         document.getElementById('gameActionsModal').style.display = 'none';
     }
 
@@ -368,6 +456,103 @@ class AdminDashboard {
         document.getElementById('gameActionsModal').style.display = 'none';
     }
 
+    showEditGameModal(game) {
+        // Populate form with game data
+        document.getElementById('editGameName').value = game.name;
+        document.getElementById('editGameVisibility').value = game.isPublic.toString();
+
+        // Setup edit challenges grid
+        this.setupEditChallengesGrid(game.challenges);
+
+        // Show modal
+        document.getElementById('editGameModal').style.display = 'block';
+    }
+
+    hideEditGameModal() {
+        document.getElementById('editGameModal').style.display = 'none';
+        document.getElementById('editGameForm').reset();
+    }
+
+    setupEditChallengesGrid(challenges = []) {
+        const grid = document.getElementById('editChallengesGrid');
+        if (!grid) return;
+
+        grid.innerHTML = '';
+
+        // Create 25 challenge inputs
+        for (let i = 0; i < 25; i++) {
+            const textarea = document.createElement('textarea');
+            textarea.className = 'challenge-input';
+            textarea.rows = 3;
+            textarea.placeholder = i === 12 ? 'FREE' : `Challenge ${i + 1}`;
+            textarea.required = i !== 12; // Center square is not required
+            textarea.value = challenges[i] || (i === 12 ? 'FREE' : '');
+
+            if (i === 12) {
+                textarea.readOnly = true;
+            }
+
+            grid.appendChild(textarea);
+        }
+    }
+
+    async handleEditGame(e) {
+        e.preventDefault();
+
+        if (!this.currentGameId) return;
+
+        try {
+            const formData = new FormData(e.target);
+            const name = formData.get('gameName');
+            const isPublic = formData.get('gameVisibility') === 'true';
+
+            // Collect challenges
+            const challengeInputs = document.querySelectorAll('#editChallengesGrid .challenge-input');
+            const challenges = Array.from(challengeInputs).map(input => input.value.trim());
+
+            // Validate challenges
+            if (challenges.some((challenge, index) => !challenge && index !== 12)) {
+                this.showError('Please fill in all challenges (except the center FREE square).');
+                return;
+            }
+
+            // Update game
+            const response = await fetch(`${CONFIG.API_BASE_URL}/games/${this.currentGameId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...this.authManager.getAuthHeaders()
+                },
+                body: JSON.stringify({
+                    name,
+                    challenges,
+                    isPublic
+                })
+            });
+
+            if (response.ok) {
+                this.hideEditGameModal();
+                this.showSuccess('Game updated successfully!');
+                await this.loadGames(); // Reload games list
+
+                // Track game update
+                if (typeof gtag !== 'undefined') {
+                    gtag('event', 'game_updated', {
+                        'event_category': 'engagement',
+                        'event_label': 'admin_dashboard',
+                        'value': 1
+                    });
+                }
+            } else {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to update game');
+            }
+        } catch (error) {
+            console.error('Error updating game:', error);
+            this.showError('Failed to update game: ' + error.message);
+        }
+    }
+
     logout() {
         this.authManager.logout();
         window.location.href = '/index.html';
@@ -398,6 +583,23 @@ class AdminDashboard {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    getTimeAgo(dateString) {
+        const now = new Date();
+        const past = new Date(dateString);
+        const diffMs = now - past;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'just now';
+        if (diffMins < 60) return `${diffMins} min ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+        if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
+        return `${Math.floor(diffDays / 365)}y ago`;
     }
 }
 
