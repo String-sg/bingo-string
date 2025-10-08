@@ -131,7 +131,6 @@ class GameCreationApp {
     }
 
     toggleEditMode() {
-        // For now, just show info about current edit mode capabilities
         alert('You can edit any cell by clicking directly in it.');
     }
 
