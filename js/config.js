@@ -30,6 +30,7 @@ class ConfigManager {
 
         try {
             const environment = this.detectEnvironment();
+            console.log(`🔧 Detected environment: ${environment}`);
 
             // In development, use build-time env vars as fallback
             if (environment === 'development') {
@@ -47,16 +48,19 @@ class ConfigManager {
                     ENVIRONMENT: 'development'
                 };
                 this.loaded = true;
+                console.log('✅ Using development configuration');
                 return this.config;
             }
 
             // For staging/production, fetch runtime config
+            console.log(`🔧 Fetching config for ${environment}...`);
             const configResponse = await fetch(`/config-${environment}.json`);
             if (!configResponse.ok) {
-                throw new Error(`Failed to load config for ${environment}`);
+                throw new Error(`Failed to load config for ${environment}: ${configResponse.status}`);
             }
 
             const runtimeConfig = await configResponse.json();
+            console.log('📋 Runtime config loaded:', runtimeConfig);
 
             // Map runtime config to our internal format
             this.config = {
