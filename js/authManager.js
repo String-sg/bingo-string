@@ -1,17 +1,23 @@
-import { CONFIG } from './config.js';
+import { CONFIG, getConfig } from './config.js';
 
 export class AuthManager {
     constructor() {
         this.user = null;
         this.isAuthenticated = false;
         this.googleAuth = null;
-        this.clientId = CONFIG.GOOGLE_CLIENT_ID;
+        this.clientId = null;
 
         this.init();
     }
 
     async init() {
         try {
+            // Load configuration first
+            console.log('🔧 AuthManager: Loading configuration...');
+            const config = await getConfig();
+            this.clientId = config.GOOGLE_CLIENT_ID;
+            console.log('🔧 AuthManager: Client ID loaded:', this.clientId);
+
             // Wait for Google Identity Services to load
             await this.waitForGoogleAuth();
 
@@ -50,8 +56,11 @@ export class AuthManager {
     }
 
     async initializeGoogleAuth() {
+        console.log('🔧 Initializing Google Auth with Client ID:', this.clientId);
+
         if (!this.clientId || this.clientId === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
-            console.warn('Google Client ID not configured. Please update CONFIG.GOOGLE_CLIENT_ID in config.js');
+            console.error('❌ Google Client ID not configured. Current value:', this.clientId);
+            console.error('❌ CONFIG object:', CONFIG);
             return;
         }
 

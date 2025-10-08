@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Config Debug</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; }
+        .section { margin: 20px 0; padding: 15px; background: #2a2a2a; border-radius: 8px; }
+        .value { color: #4CAF50; }
+        .undefined { color: #f44336; }
+    </style>
+</head>
+<body>
+    <h1>Configuration Debug</h1>
+
+    <div class="section">
+        <h2>Environment Variables (import.meta.env)</h2>
+        <div id="envVars"></div>
+    </div>
+
+    <div class="section">
+        <h2>Config Manager Test</h2>
+        <div id="configTest"></div>
+    </div>
+
+    <script type="module">
+        // Check environment variables
+        const envDiv = document.getElementById('envVars');
+        envDiv.innerHTML = `
+            <p>VITE_GOOGLE_CLIENT_ID: <span class="${import.meta.env.VITE_GOOGLE_CLIENT_ID ? 'value' : 'undefined'}">${import.meta.env.VITE_GOOGLE_CLIENT_ID || 'undefined'}</span></p>
+            <p>VITE_API_BASE_URL: <span class="${import.meta.env.VITE_API_BASE_URL ? 'value' : 'undefined'}">${import.meta.env.VITE_API_BASE_URL || 'undefined'}</span></p>
+            <p>All env vars: <span class="value">${JSON.stringify(import.meta.env, null, 2)}</span></p>
+        `;
+
+        // Test config manager
+        try {
+            const { getConfig } = await import('./js/config.js');
+            const config = await getConfig();
+
+            const configDiv = document.getElementById('configTest');
+            configDiv.innerHTML = `
+                <p>Config loaded successfully!</p>
+                <p>GOOGLE_CLIENT_ID: <span class="${config.GOOGLE_CLIENT_ID ? 'value' : 'undefined'}">${config.GOOGLE_CLIENT_ID || 'undefined'}</span></p>
+                <p>API_BASE_URL: <span class="value">${config.API_BASE_URL}</span></p>
+                <p>ENVIRONMENT: <span class="value">${config.ENVIRONMENT}</span></p>
+                <p>Full config: <span class="value">${JSON.stringify(config, null, 2)}</span></p>
+            `;
+        } catch (error) {
+            document.getElementById('configTest').innerHTML = `<p class="undefined">Error loading config: ${error.message}</p>`;
+        }
+    </script>
+</body>
+</html>

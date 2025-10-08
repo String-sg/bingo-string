@@ -23,7 +23,8 @@ class BingoApp {
             // Load configuration first
             console.log('🔧 Loading configuration...');
             const config = await getConfig();
-            console.log('🔧 Configuration loaded:', config.ENVIRONMENT);
+            console.log('🔧 Configuration loaded:', config);
+            console.log('🔧 Google Client ID from config:', config.GOOGLE_CLIENT_ID);
 
             await this.setupGrid();
             this.setupEventListeners();
