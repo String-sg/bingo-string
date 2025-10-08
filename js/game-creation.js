@@ -131,8 +131,8 @@ class GameCreationApp {
     }
 
     toggleEditMode() {
-        // For now, just show info about edit mode
-        alert('Edit mode will allow:\n\n• Click any cell to edit\n• Auto-save as you type\n• Drag and drop to reorder\n• Bulk edit options\n\nCurrently you can edit by clicking directly in any cell.');
+        // For now, just show info about current edit mode capabilities
+        alert('You can edit any cell by clicking directly in it.');
     }
 
     handleCsvImport() {
