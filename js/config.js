@@ -1,9 +1,9 @@
 export const CONFIG = {
     // Google OAuth Configuration
-    GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_ID: (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_GOOGLE_CLIENT_ID : undefined,
 
     // API Configuration (for future backend integration)
-    API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
+    API_BASE_URL: (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api' : 'http://localhost:3000/api',
 
     // Session Configuration
     SESSION_TIMEOUT: 24 * 60 * 60 * 1000, // 24 hours
