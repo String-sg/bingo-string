@@ -4,6 +4,7 @@ import { CameraManager } from './cameraManager.js';
 import { TouchManager } from './touchManager.js';
 import { ModalManager } from './modalManager.js';
 import { AuthManager } from './authManager.js';
+import { getConfig } from './config.js';
 
 class BingoApp {
     constructor() {
@@ -19,6 +20,11 @@ class BingoApp {
 
     async init() {
         try {
+            // Load configuration first
+            console.log('🔧 Loading configuration...');
+            const config = await getConfig();
+            console.log('🔧 Configuration loaded:', config.ENVIRONMENT);
+
             await this.setupGrid();
             this.setupEventListeners();
             this.setupTouchManager();
