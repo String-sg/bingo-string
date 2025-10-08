@@ -1,9 +1,17 @@
+// Helper function to safely access environment variables
+const getEnvVar = (key, defaultValue = undefined) => {
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+        return import.meta.env[key] || defaultValue;
+    }
+    return defaultValue;
+};
+
 export const CONFIG = {
     // Google OAuth Configuration
-    GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_ID: getEnvVar('VITE_GOOGLE_CLIENT_ID'),
 
     // API Configuration (for future backend integration)
-    API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
+    API_BASE_URL: getEnvVar('VITE_API_BASE_URL', 'http://localhost:3000/api'),
 
     // Session Configuration
     SESSION_TIMEOUT: 24 * 60 * 60 * 1000, // 24 hours
