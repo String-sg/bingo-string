@@ -132,6 +132,23 @@ class BingoApp {
                 this.authManager.closeAuthModal();
             }
         });
+
+        // Admin dashboard buttons
+        const backToGameBtn = document.getElementById('backToGameBtn');
+        if (backToGameBtn) {
+            backToGameBtn.addEventListener('click', () => this.authManager.hideAdminDashboard());
+        }
+
+        const createNewGameBtn = document.getElementById('createNewGameBtn');
+        const createNewGameBtn2 = document.getElementById('createNewGameBtn2');
+
+        if (createNewGameBtn) {
+            createNewGameBtn.addEventListener('click', () => this.handleCreateNewGame());
+        }
+
+        if (createNewGameBtn2) {
+            createNewGameBtn2.addEventListener('click', () => this.handleCreateNewGame());
+        }
     }
 
     setupTouchManager() {
@@ -410,6 +427,21 @@ class BingoApp {
             script.onerror = () => reject(new Error('Failed to load JSZip'));
             document.head.appendChild(script);
         });
+    }
+
+    handleCreateNewGame() {
+        // For now, show a placeholder message
+        // Later this will open a game creation modal/form
+        alert('Create New Game functionality coming soon!\n\nFeatures planned:\n- Custom challenge upload\n- Game settings configuration\n- Public/private game options\n- Team management');
+
+        // Track create game intent
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'create_game_intent', {
+                'event_category': 'engagement',
+                'event_label': 'admin_dashboard',
+                'value': 1
+            });
+        }
     }
 }
 
