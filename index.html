@@ -99,6 +99,39 @@
         </div>
     </div>
 
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="admin-dashboard" style="display: none;">
+        <div class="admin-header">
+            <h1>Admin Dashboard</h1>
+            <p class="admin-subtitle">Manage your bingo games</p>
+            <button class="btn btn-primary admin-create-btn" id="createNewGameBtn">
+                <span class="btn-icon">+</span>
+                Create New Game
+            </button>
+        </div>
+
+        <div class="admin-content">
+            <div class="games-section">
+                <div class="empty-state" id="emptyState">
+                    <h2>No games yet</h2>
+                    <p>Create your first bingo game to get started</p>
+                    <button class="btn btn-primary" id="createNewGameBtn2">
+                        <span class="btn-icon">+</span>
+                        Create New Game
+                    </button>
+                </div>
+
+                <div class="games-list" id="gamesList" style="display: none;">
+                    <!-- Games will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-footer">
+            <button class="btn btn-outline" id="backToGameBtn">← Back to Game</button>
+        </div>
+    </div>
+
     <!-- Status Messages -->
     <div class="status" id="status"></div>
 
