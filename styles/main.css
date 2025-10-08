@@ -40,6 +40,13 @@ body {
     line-height: 1.6;
 }
 
+/* Game creation page body - full width */
+.game-creation-body {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+}
+
 .header {
     text-align: center;
     color: var(--text-primary);
@@ -602,13 +609,7 @@ body {
     }
 }
 
-/* Game Creation Form Styles */
-.game-creation-form {
-    background: var(--background-color);
-    min-height: 100vh;
-    padding: 0;
-    margin: -30px -20px -20px -20px;
-}
+/* Game Creation Form Styles - Now for dedicated page */
 
 .form-header {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
@@ -653,7 +654,7 @@ body {
 
 .form-content {
     padding: 40px 20px;
-    max-width: 800px;
+    max-width: 900px;
     margin: 0 auto;
 }
 
@@ -770,10 +771,11 @@ body {
 }
 
 .form-footer {
-    padding: 20px;
+    padding: 30px 20px;
     text-align: center;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     background: rgba(255, 255, 255, 0.02);
+    margin-top: 40px;
 }
 
 .form-footer .btn {
@@ -789,13 +791,15 @@ body {
 
     .form-header h1 {
         font-size: 1.5rem;
-        margin-top: 20px;
+        margin-top: 8px;
     }
 
     .back-btn {
-        position: static;
-        transform: none;
-        margin-bottom: 10px;
+        position: absolute;
+        left: 15px;
+        top: 15px;
+        padding: 6px 12px;
+        font-size: 0.8rem;
     }
 
     .form-content {
@@ -803,32 +807,42 @@ body {
     }
 
     .form-section {
-        padding: 20px;
+        padding: 20px 15px;
+        margin-bottom: 25px;
     }
 
     .bingo-editor-grid {
-        gap: 6px;
+        gap: 4px;
         max-width: 100%;
     }
 
     .editor-cell {
-        font-size: 0.65rem;
-        padding: 4px;
-        min-height: 60px;
+        font-size: 0.6rem;
+        padding: 6px 4px;
+        min-height: 50px;
     }
 
     .questions-toolbar {
         flex-direction: column;
+        gap: 8px;
     }
 
     .questions-toolbar .btn {
         width: 100%;
         justify-content: center;
+        padding: 12px;
+    }
+
+    .form-footer {
+        padding: 20px 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
     }
 
     .form-footer .btn {
-        display: block;
         width: 100%;
-        margin: 8px 0;
+        max-width: 300px;
+        margin: 0 auto;
     }
 }
