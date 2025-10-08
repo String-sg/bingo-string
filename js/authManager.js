@@ -221,16 +221,44 @@ export class AuthManager {
             if (response.ok) {
                 const userData = await response.json();
                 console.log('User synced with backend:', userData);
-
-                // For now, show success message. Later will redirect to admin dashboard
-                alert(`Welcome ${this.user.name}! Admin dashboard coming soon.`);
             } else {
-                console.error('Failed to sync user with backend');
-                alert(`Welcome ${this.user.name}! Note: Backend sync failed.`);
+                console.warn('Failed to sync user with backend');
             }
         } catch (error) {
-            console.error('Error syncing with backend:', error);
-            alert(`Welcome ${this.user.name}! Note: Backend connection failed.`);
+            console.warn('Error syncing with backend:', error);
+        }
+
+        // Show admin dashboard
+        this.showAdminDashboard();
+    }
+
+    showAdminDashboard() {
+        // Hide main game interface
+        const gridContainer = document.querySelector('.grid-container');
+        const footer = document.querySelector('.footer');
+
+        if (gridContainer) gridContainer.style.display = 'none';
+        if (footer) footer.style.display = 'none';
+
+        // Show admin dashboard
+        const adminDashboard = document.getElementById('adminDashboard');
+        if (adminDashboard) {
+            adminDashboard.style.display = 'block';
+        }
+    }
+
+    hideAdminDashboard() {
+        // Show main game interface
+        const gridContainer = document.querySelector('.grid-container');
+        const footer = document.querySelector('.footer');
+
+        if (gridContainer) gridContainer.style.display = 'block';
+        if (footer) footer.style.display = 'block';
+
+        // Hide admin dashboard
+        const adminDashboard = document.getElementById('adminDashboard');
+        if (adminDashboard) {
+            adminDashboard.style.display = 'none';
         }
     }
 
