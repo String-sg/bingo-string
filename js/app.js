@@ -431,9 +431,9 @@ class BingoApp {
     }
 
     handleCreateNewGame() {
-        // For now, show a placeholder message
-        // Later this will open a game creation modal/form
-        alert('Create New Game functionality coming soon!\n\nFeatures planned:\n- Custom challenge upload\n- Game settings configuration\n- Public/private game options\n- Team management');
+        // Hide admin dashboard and show game creation form
+        this.authManager.hideAdminDashboard();
+        this.showGameCreationForm();
 
         // Track create game intent
         if (typeof gtag !== 'undefined') {
@@ -442,6 +442,49 @@ class BingoApp {
                 'event_label': 'admin_dashboard',
                 'value': 1
             });
+        }
+    }
+
+    showGameCreationForm() {
+        const gameCreationForm = document.getElementById('gameCreationForm');
+        if (gameCreationForm) {
+            gameCreationForm.style.display = 'block';
+            this.initializeBingoEditor();
+        }
+    }
+
+    hideGameCreationForm() {
+        const gameCreationForm = document.getElementById('gameCreationForm');
+        if (gameCreationForm) {
+            gameCreationForm.style.display = 'none';
+        }
+    }
+
+    initializeBingoEditor() {
+        const gridContainer = document.getElementById('bingoEditorGrid');
+        if (!gridContainer) return;
+
+        // Clear existing grid
+        gridContainer.innerHTML = '';
+
+        // Create 5x5 grid of editable cells
+        for (let i = 0; i < 25; i++) {
+            const cell = document.createElement('textarea');
+            cell.className = 'editor-cell';
+            cell.dataset.index = i;
+
+            // Center cell (index 12) is FREE
+            if (i === 12) {
+                cell.className += ' free-cell';
+                cell.value = 'FREE';
+                cell.disabled = true;
+                cell.placeholder = '';
+            } else {
+                cell.placeholder = `Q${i + 1}`;
+                cell.maxLength = 100;
+            }
+
+            gridContainer.appendChild(cell);
         }
     }
 }
