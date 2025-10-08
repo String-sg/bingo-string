@@ -22,7 +22,6 @@
         "vite": "^5.0.0"
     },
     "dependencies": {
-        "@playwright/test": "^1.56.0",
-        "modern-normalize": "^2.0.0"
+        "@playwright/test": "^1.56.0"
     }
 }
