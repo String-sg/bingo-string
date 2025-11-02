@@ -148,10 +148,11 @@ class BingoApp {
     }
 
     storeCellImage(cellIndex, imageData) {
-        // Store in localStorage for persistence
-        const cellImages = JSON.parse(localStorage.getItem('bingoCellImages') || '{}');
+        // Store in localStorage for persistence (instance-specific)
+        const storageKey = this.getStorageKey('bingoCellImages');
+        const cellImages = JSON.parse(localStorage.getItem(storageKey) || '{}');
         cellImages[cellIndex] = imageData;
-        localStorage.setItem('bingoCellImages', JSON.stringify(cellImages));
+        localStorage.setItem(storageKey, JSON.stringify(cellImages));
 
         // Immediately apply the image to the cell
         const cell = this.bingoGrid.cells[cellIndex];
@@ -173,7 +174,8 @@ class BingoApp {
     }
 
     loadCellImages() {
-        const cellImages = JSON.parse(localStorage.getItem('bingoCellImages') || '{}');
+        const storageKey = this.getStorageKey('bingoCellImages');
+        const cellImages = JSON.parse(localStorage.getItem(storageKey) || '{}');
         Object.entries(cellImages).forEach(([index, imageData]) => {
             const cellIndex = parseInt(index);
             const cell = this.bingoGrid.cells[cellIndex];
@@ -187,7 +189,8 @@ class BingoApp {
     }
 
     showPhotoModal(cellIndex) {
-        const cellImages = JSON.parse(localStorage.getItem('bingoCellImages') || '{}');
+        const storageKey = this.getStorageKey('bingoCellImages');
+        const cellImages = JSON.parse(localStorage.getItem(storageKey) || '{}');
         const imageData = cellImages[cellIndex];
 
         if (imageData) {
@@ -226,9 +229,10 @@ class BingoApp {
 
     removeCellImage(cellIndex) {
         // Remove from localStorage
-        const cellImages = JSON.parse(localStorage.getItem('bingoCellImages') || '{}');
+        const storageKey = this.getStorageKey('bingoCellImages');
+        const cellImages = JSON.parse(localStorage.getItem(storageKey) || '{}');
         delete cellImages[cellIndex];
-        localStorage.setItem('bingoCellImages', JSON.stringify(cellImages));
+        localStorage.setItem(storageKey, JSON.stringify(cellImages));
 
         // Remove background image from cell
         const cell = this.bingoGrid.cells[cellIndex];
@@ -251,7 +255,8 @@ class BingoApp {
 
     reset() {
         // Clear localStorage
-        localStorage.removeItem('bingoCellImages');
+        const storageKey = this.getStorageKey('bingoCellImages');
+        localStorage.removeItem(storageKey);
 
         // Reset grid
         this.bingoGrid.reset();
@@ -293,7 +298,8 @@ class BingoApp {
     }
 
     async downloadAllImages() {
-        const cellImages = JSON.parse(localStorage.getItem('bingoCellImages') || '{}');
+        const storageKey = this.getStorageKey('bingoCellImages');
+        const cellImages = JSON.parse(localStorage.getItem(storageKey) || '{}');
         const imageEntries = Object.entries(cellImages);
         
         if (imageEntries.length === 0) {
@@ -381,6 +387,20 @@ class BingoApp {
             script.onerror = () => reject(new Error('Failed to load JSZip'));
             document.head.appendChild(script);
         });
+    }
+
+    // Get instance-specific localStorage key
+    getStorageKey(baseKey) {
+        const instanceId = this.instanceConfig?.id || 'default';
+        return `${baseKey}_${instanceId}`;
+    }
+
+    // Get shareable URL for current instance
+    getShareableURL() {
+        if (!this.instanceConfig || this.instanceConfig.id === 'default') {
+            return window.location.origin + window.location.pathname;
+        }
+        return `${window.location.origin}${window.location.pathname}?instance=${this.instanceConfig.id}`;
     }
 }
 
