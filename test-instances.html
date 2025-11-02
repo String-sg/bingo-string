@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instance Testing Dashboard</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 2rem;
+            background: #f8f9fa;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .test-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1.5rem;
+            background: #f8f9fa;
+        }
+        .test-card h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .test-links {
+            margin-top: 1rem;
+        }
+        .test-links a {
+            display: inline-block;
+            margin: 0.25rem 0.5rem 0.25rem 0;
+            padding: 0.5rem 1rem;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .test-links a:hover {
+            background: #0056b3;
+        }
+        .status {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #e9ecef;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        .success { background: #d4edda; border-left: 4px solid #28a745; }
+        .warning { background: #fff3cd; border-left: 4px solid #ffc107; }
+        .error { background: #f8d7da; border-left: 4px solid #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Bingo Multitenancy Test Dashboard</h1>
+        <p>Test different instance configurations and verify that each instance loads its own data, branding, and challenges.</p>
+
+        <div class="test-grid">
+            <div class="test-card">
+                <h3>📚 Default Instance</h3>
+                <p><strong>Expected:</strong> Samsung bingo challenges with default branding</p>
+                <div class="test-links">
+                    <a href="index.html" target="_blank">🎮 Play</a>
+                    <a href="#" onclick="testInstance('')">🧪 Test</a>
+                </div>
+                <div id="test-default" class="status">Click "Test" to validate</div>
+            </div>
+
+            <div class="test-card">
+                <h3>🔬 Physics Teachers</h3>
+                <p><strong>Expected:</strong> Physics education challenges with TJC branding</p>
+                <div class="test-links">
+                    <a href="index.html?instance=physics-tjc-2024" target="_blank">🎮 Play</a>
+                    <a href="#" onclick="testInstance('physics-tjc-2024')">🧪 Test</a>
+                </div>
+                <div id="test-physics-tjc-2024" class="status">Click "Test" to validate</div>
+            </div>
+
+            <div class="test-card">
+                <h3>🤖 Samsung Educators</h3>
+                <p><strong>Expected:</strong> AI education challenges with Samsung branding</p>
+                <div class="test-links">
+                    <a href="index.html?instance=samsung-educators" target="_blank">🎮 Play</a>
+                    <a href="#" onclick="testInstance('samsung-educators')">🧪 Test</a>
+                </div>
+                <div id="test-samsung-educators" class="status">Click "Test" to validate</div>
+            </div>
+
+            <div class="test-card">
+                <h3>❌ Invalid Instance</h3>
+                <p><strong>Expected:</strong> Fallback to default configuration</p>
+                <div class="test-links">
+                    <a href="index.html?instance=nonexistent-instance" target="_blank">🎮 Play</a>
+                    <a href="#" onclick="testInstance('nonexistent-instance')">🧪 Test</a>
+                </div>
+                <div id="test-nonexistent-instance" class="status">Click "Test" to validate</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 3rem; text-align: center;">
+            <a href="admin.html" style="display: inline-block; padding: 1rem 2rem; background: #28a745; color: white; text-decoration: none; border-radius: 6px; font-size: 1.1rem;">
+                ⚙️ Admin Interface
+            </a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { InstanceManager } from './js/instanceManager.js';
+
+        window.testInstance = async function(instanceId) {
+            const statusElement = document.getElementById(`test-${instanceId || 'default'}`);
+            statusElement.textContent = 'Testing...';
+            statusElement.className = 'status';
+
+            try {
+                // Simulate URL parameters
+                const originalLocation = window.location;
+                const mockLocation = {
+                    ...originalLocation,
+                    search: instanceId ? `?instance=${instanceId}` : ''
+                };
+
+                // Create temporary instance manager for testing
+                const testManager = new InstanceManager();
+
+                // Mock URLSearchParams for the test
+                const originalURLSearchParams = window.URLSearchParams;
+                window.URLSearchParams = function(search) {
+                    return {
+                        get: (key) => {
+                            if (key === 'instance') {
+                                return instanceId || null;
+                            }
+                            return null;
+                        }
+                    };
+                };
+
+                const config = await testManager.loadInstance();
+
+                // Restore original URLSearchParams
+                window.URLSearchParams = originalURLSearchParams;
+
+                // Validate the loaded configuration
+                const expectedId = instanceId || 'default';
+                const results = [];
+
+                if (config.id === expectedId) {
+                    results.push('✅ Correct instance ID');
+                } else {
+                    results.push(`❌ Wrong instance ID: got '${config.id}', expected '${expectedId}'`);
+                }
+
+                if (config.title) {
+                    results.push(`✅ Title: "${config.title}"`);
+                } else {
+                    results.push('❌ Missing title');
+                }
+
+                if (config.challengeFile) {
+                    results.push(`✅ Challenge file: ${config.challengeFile}`);
+                } else {
+                    results.push('❌ Missing challenge file');
+                }
+
+                // Test challenge file accessibility
+                try {
+                    const challengeResponse = await fetch(config.challengeFile);
+                    if (challengeResponse.ok) {
+                        const challengeText = await challengeResponse.text();
+                        const lines = challengeText.trim().split('\\n');
+                        results.push(`✅ Challenge file accessible (${lines.length - 1} challenges)`);
+                    } else {
+                        results.push(`❌ Challenge file not accessible: ${challengeResponse.status}`);
+                    }
+                } catch (error) {
+                    results.push(`❌ Challenge file error: ${error.message}`);
+                }
+
+                statusElement.innerHTML = results.join('<br>');
+                statusElement.className = results.some(r => r.includes('❌')) ? 'status error' : 'status success';
+
+            } catch (error) {
+                statusElement.textContent = `❌ Test failed: ${error.message}`;
+                statusElement.className = 'status error';
+            }
+        };
+
+        // Auto-test all instances on page load
+        setTimeout(() => {
+            const instances = ['', 'physics-tjc-2024', 'samsung-educators', 'nonexistent-instance'];
+            instances.forEach((id, index) => {
+                setTimeout(() => testInstance(id), index * 500);
+            });
+        }, 1000);
+    </script>
+</body>
+</html>

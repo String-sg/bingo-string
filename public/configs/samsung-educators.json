@@ -1,7 +1,7 @@
 {
   "title": "Samsung GenAI Educators Bingo",
   "description": "Samsung GenAI for Educators Community Event - Explore AI in education!",
-  "challengeFile": "./public/challenges/samsung-educators.csv",
+  "challengeFile": "./challenges/samsung-educators.csv",
   "creator": "admin@samsung-educators.com",
   "created": "2024-11-02T00:00:00.000Z",
   "theme": "technology",

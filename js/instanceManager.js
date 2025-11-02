@@ -47,7 +47,7 @@ export class InstanceManager {
             console.log(`🔧 Loading instance: ${instanceId}`);
 
             // Try to load instance-specific config
-            const configResponse = await fetch(`./public/configs/${instanceId}.json`);
+            const configResponse = await fetch(`./configs/${instanceId}.json`);
 
             if (!configResponse.ok) {
                 console.warn(`⚠️ Instance config not found for '${instanceId}', using default`);
