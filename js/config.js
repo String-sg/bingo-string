@@ -1,3 +1,8 @@
+import { InstanceManager } from './instanceManager.js';
+
+// Global instance manager
+const instanceManager = new InstanceManager();
+
 export const CONFIG = {
     // Camera settings
     CAMERA: {
@@ -26,6 +31,19 @@ export const CONFIG = {
         slow: 500
     },
 
-    // Challenge file
-    CHALLENGE_FILE: '2025_910samsung_bingo_challenges.csv'
+    // Dynamic challenge file based on instance
+    get CHALLENGE_FILE() {
+        return instanceManager.getChallengeFile();
+    }
+};
+
+// Export functions for instance management
+export const getInstanceConfig = async () => {
+    return await instanceManager.loadInstance();
+};
+
+export const getInstanceManager = () => instanceManager;
+
+export const applyInstanceBranding = () => {
+    instanceManager.applyBranding();
 }; 

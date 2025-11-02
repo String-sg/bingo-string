@@ -1,0 +1,13 @@
+{
+  "title": "Physics Teachers Bingo",
+  "description": "TJC Physics Department Team Building Game - Complete physics education challenges!",
+  "challengeFile": "./public/challenges/physics-tjc-2024.csv",
+  "creator": "sengkwang@example.com",
+  "created": "2024-11-02T00:00:00.000Z",
+  "theme": "education",
+  "gridSize": 5,
+  "branding": {
+    "footer": "Made with ❤️ by <a href=\"#\" target=\"_blank\">TJC Physics Department</a>",
+    "subtitle": "TJC Physics Department Team Building 2024"
+  }
+}

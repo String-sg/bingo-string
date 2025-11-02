@@ -3,6 +3,7 @@ import { BingoGrid } from './bingoGrid.js';
 import { CameraManager } from './cameraManager.js';
 import { TouchManager } from './touchManager.js';
 import { ModalManager } from './modalManager.js';
+import { getInstanceConfig, applyInstanceBranding } from './config.js';
 
 class BingoApp {
     constructor() {
@@ -11,12 +12,21 @@ class BingoApp {
         this.cameraManager = new CameraManager();
         this.touchManager = null;
         this.modalManager = new ModalManager(this.cameraManager);
+        this.instanceConfig = null;
 
         this.init();
     }
 
     async init() {
         try {
+            // Load instance configuration first
+            console.log('🔧 Loading instance configuration...');
+            this.instanceConfig = await getInstanceConfig();
+            console.log('🎯 Instance loaded:', this.instanceConfig);
+
+            // Apply instance branding
+            applyInstanceBranding();
+
             await this.setupGrid();
             this.setupEventListeners();
             this.setupTouchManager();
