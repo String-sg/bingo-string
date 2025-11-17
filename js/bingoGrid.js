@@ -15,6 +15,9 @@ export class BingoGrid {
         this.container.innerHTML = '';
         this.cells = [];
 
+        // Set CSS grid columns based on grid size
+        this.container.style.gridTemplateColumns = `repeat(${CONFIG.GRID.size}, 1fr)`;
+
         for (let i = 0; i < CONFIG.GRID.size * CONFIG.GRID.size; i++) {
             const cell = this.createCell(i, challenges[i]);
             this.container.appendChild(cell);
