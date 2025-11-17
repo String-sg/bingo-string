@@ -333,10 +333,11 @@ class BingoApp {
 
     getStatus() {
         const completedCells = this.bingoGrid.getCompletedCells();
+        const totalCells = CONFIG.GRID.size * CONFIG.GRID.size;
         return {
             completed: completedCells.length,
-            total: 25,
-            percentage: Math.round((completedCells.length / 25) * 100)
+            total: totalCells,
+            percentage: Math.round((completedCells.length / totalCells) * 100)
         };
     }
 

@@ -15,9 +15,10 @@ export class ChallengeLoader {
             const csvText = await response.text();
             this.challenges = this.parseCSV(csvText);
 
-            // Ensure we have exactly 25 challenges for a 5x5 grid
-            if (this.challenges.length !== 25) {
-                console.warn(`Expected 25 challenges, got ${this.challenges.length}`);
+            // Ensure we have the correct number of challenges for the grid size
+            const expectedChallenges = CONFIG.GRID.size * CONFIG.GRID.size;
+            if (this.challenges.length !== expectedChallenges) {
+                console.warn(`Expected ${expectedChallenges} challenges for ${CONFIG.GRID.size}x${CONFIG.GRID.size} grid, got ${this.challenges.length}`);
             }
 
             return this.challenges;
