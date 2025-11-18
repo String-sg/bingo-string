@@ -118,8 +118,10 @@ export const CONFIG = {
 
     // Grid settings
     GRID: {
-        size: 5,
-        centerIndex: 12 // 0-based index for center cell (2,2 in 5x5 grid)
+        size: 3, // Toggle between 3 (3x3) or 5 (5x5) - change this value to switch grid size
+        get centerIndex() {
+            return Math.floor(this.size * this.size / 2); // Dynamic center calculation
+        }
     },
 
     // Animation durations
@@ -129,6 +131,6 @@ export const CONFIG = {
         slow: 500
     },
 
-    // Challenge file
-    CHALLENGE_FILE: '2025_910samsung_bingo_challenges.csv'
+    // Challenge file - change this filename to load different challenges
+    CHALLENGE_FILE: '2025_1118_nLDSRetro.csv'
 }; 
