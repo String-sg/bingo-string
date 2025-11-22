@@ -27,11 +27,13 @@ router.get('/', authenticateGoogle, async (req: AuthenticatedRequest, res) => {
 // POST /api/games - Create new game (requires auth)
 router.post('/', authenticateGoogle, async (req: AuthenticatedRequest, res) => {
   try {
-    const { name, challenges, isPublic = true } = req.body;
+    const { name, challenges, isPublic = true, gridSize = 5 } = req.body;
 
-    if (!name || !challenges || !Array.isArray(challenges) || challenges.length !== 25) {
+    const expectedChallenges = gridSize === 3 ? 9 : 25;
+
+    if (!name || !challenges || !Array.isArray(challenges) || challenges.length !== expectedChallenges) {
       return res.status(400).json({
-        error: 'Name and 25 challenges are required'
+        error: `Name and ${expectedChallenges} challenges are required for a ${gridSize}x${gridSize} grid`
       });
     }
 
@@ -55,6 +57,7 @@ router.post('/', authenticateGoogle, async (req: AuthenticatedRequest, res) => {
         name,
         creatorEmail: req.user!.email,
         challengesJson: challenges,
+        gridSize,
         isPublic
       }
     });
