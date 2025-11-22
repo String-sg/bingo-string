@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +12,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-NM42QYT2MD"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
+        function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
         gtag('config', 'G-NM42QYT2MD');
     </script>
@@ -52,6 +53,11 @@
                     <span class="btn-icon">📄</span>
                     CSV
                 </button>
+                <a href="sample.csv" download class="btn btn-outline"
+                    style="text-decoration: none; display: inline-flex; align-items: center;">
+                    <span class="btn-icon">⬇️</span>
+                    Sample
+                </a>
             </div>
 
             <div class="bingo-editor-grid" id="bingoEditorGrid">
@@ -71,4 +77,5 @@
 
     <script type="module" src="js/game-creation.js"></script>
 </body>
+
 </html>
