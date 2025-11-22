@@ -104,9 +104,13 @@ export class AuthManager {
             this.storeSession();
             this.updateUI();
 
-            // Close auth modal and redirect to admin
+            // Close auth modal and redirect to admin (only on homepage)
             this.closeAuthModal();
-            this.redirectToAdmin();
+
+            // Don't redirect if we're on the game creation page
+            if (!window.location.pathname.includes('new.html')) {
+                this.redirectToAdmin();
+            }
 
             // Track successful login
             if (typeof gtag !== 'undefined') {
