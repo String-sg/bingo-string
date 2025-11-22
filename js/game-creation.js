@@ -174,7 +174,7 @@ class GameCreationApp {
             console.log('Game created:', game);
 
             // Generate shareable link
-            const shareLink = `${window.location.origin}/${game.creatorEmail}/${game.id}`;
+            const shareLink = `${window.location.origin}/play/${game.id}`;
 
             // Show success and redirect
             alert(`Game created successfully!\n\nShare this link:\n${shareLink}`);
@@ -189,7 +189,7 @@ class GameCreationApp {
             }
 
             // Redirect to the new game
-            window.location.href = `/${game.creatorEmail}/${game.id}`;
+            window.location.href = `/play/${game.id}`;
 
         } catch (error) {
             console.error('Error creating game:', error);

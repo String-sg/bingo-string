@@ -26,9 +26,13 @@ class BingoApp {
             console.log('🔧 Configuration loaded:', config);
             console.log('🔧 Google Client ID from config:', config.GOOGLE_CLIENT_ID);
 
-            // Check for custom game URL: /email/uuid
+            // Check for custom game URL: /play/{uuid}
             const pathParts = window.location.pathname.split('/').filter(p => p);
-            if (pathParts.length >= 2 && pathParts[0].includes('@')) {
+            if (pathParts.length >= 2 && pathParts[0] === 'play') {
+                const gameId = pathParts[1];
+                await this.loadCustomGame(gameId);
+            } else if (pathParts.length >= 2 && pathParts[0].includes('@')) {
+                // Legacy support for email/uuid format
                 const gameId = pathParts[1];
                 await this.loadCustomGame(gameId);
             } else {

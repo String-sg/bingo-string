@@ -299,15 +299,15 @@ export class AuthManager {
             card.className = 'game-card';
 
             const date = new Date(game.updatedAt).toLocaleDateString();
-            const shareUrl = `${window.location.origin}/${this.user.email}/${game.id}`;
+            const shareUrl = `${window.location.origin}/play/${game.id}`;
 
             card.innerHTML = `
                 <h3>${game.name}</h3>
                 <p class="game-meta">Updated: ${date}</p>
                 <div class="game-actions">
                     <a href="${shareUrl}" class="btn btn-sm btn-primary">Play</a>
-                    <button class="btn btn-sm btn-outline" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied!'))">Share</button>
-                    <button class="btn btn-sm btn-danger" onclick="window.bingoApp.authManager.deleteGame('${game.id}')">Delete</button>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="event.preventDefault(); navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied!'))">Share</button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="event.preventDefault(); window.bingoApp.authManager.deleteGame('${game.id}')">Delete</button>
                 </div>
             `;
             gamesList.appendChild(card);
