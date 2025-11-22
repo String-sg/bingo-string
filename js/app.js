@@ -14,6 +14,9 @@ class BingoApp {
         this.touchManager = null;
         this.modalManager = new ModalManager(this.cameraManager);
         this.authManager = new AuthManager();
+        this.sessionId = null;
+        this.gameId = null;
+        this.playerName = null;
 
         this.init();
     }
@@ -29,12 +32,12 @@ class BingoApp {
             // Check for custom game URL: /play/{uuid}
             const pathParts = window.location.pathname.split('/').filter(p => p);
             if (pathParts.length >= 2 && pathParts[0] === 'play') {
-                const gameId = pathParts[1];
-                await this.loadCustomGame(gameId);
+                this.gameId = pathParts[1];
+                await this.loadCustomGame(this.gameId);
             } else if (pathParts.length >= 2 && pathParts[0].includes('@')) {
                 // Legacy support for email/uuid format
-                const gameId = pathParts[1];
-                await this.loadCustomGame(gameId);
+                this.gameId = pathParts[1];
+                await this.loadCustomGame(this.gameId);
             } else {
                 await this.setupGrid();
             }
@@ -84,6 +87,9 @@ class BingoApp {
 
             // Setup grid with custom challenges
             await this.setupGrid(game.challengesJson, game.gridSize || 5);
+
+            // Initialize session
+            this.initializeSession();
 
         } catch (error) {
             console.error('Failed to load custom game:', error);
@@ -239,6 +245,82 @@ class BingoApp {
             if (this.bingoGrid.checkForBingo()) {
                 this.handleBingo();
             }
+
+            // Update session progress
+            this.updateSessionProgress();
+        }
+    }
+
+    async initializeSession() {
+        if (!this.gameId) return;
+
+        const storageKey = `bingoSession_${this.gameId}`;
+        const storedSession = localStorage.getItem(storageKey);
+
+        if (storedSession) {
+            const session = JSON.parse(storedSession);
+            this.sessionId = session.sessionId;
+            this.playerName = session.playerName;
+            console.log(`Resuming session for ${this.playerName}`);
+            this.joinGameSession();
+        } else {
+            // Prompt for name
+            this.modalManager.showNamePrompt((name) => {
+                this.playerName = name;
+                this.sessionId = crypto.randomUUID();
+
+                // Store session locally
+                localStorage.setItem(storageKey, JSON.stringify({
+                    sessionId: this.sessionId,
+                    playerName: this.playerName
+                }));
+
+                this.joinGameSession();
+            });
+        }
+    }
+
+    async joinGameSession() {
+        try {
+            const response = await fetch(`${(await getConfig()).API_BASE_URL}/games/${this.gameId}/join`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sessionId: this.sessionId,
+                    playerName: this.playerName
+                })
+            });
+
+            if (response.ok) {
+                const session = await response.json();
+                console.log('Joined game session:', session);
+
+                // Restore progress if available (optional, for now we rely on local storage for immediate state)
+                // But we could sync from server here if we wanted cross-device support
+            }
+        } catch (error) {
+            console.error('Failed to join session:', error);
+        }
+    }
+
+    async updateSessionProgress() {
+        if (!this.gameId || !this.sessionId) return;
+
+        try {
+            const completedCells = this.bingoGrid.getCompletedCells();
+            const isCompleted = this.bingoGrid.bingoLines.length > 0; // Or some other completion criteria
+
+            await fetch(`${(await getConfig()).API_BASE_URL}/games/${this.gameId}/progress`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sessionId: this.sessionId,
+                    progressJson: completedCells,
+                    isCompleted
+                })
+            });
+        } catch (error) {
+            console.error('Failed to update progress:', error);
         }
     }
 

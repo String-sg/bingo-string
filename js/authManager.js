@@ -307,11 +307,88 @@ export class AuthManager {
                 <div class="game-actions">
                     <a href="${shareUrl}" class="btn btn-sm btn-primary">Play</a>
                     <button type="button" class="btn btn-sm btn-outline" onclick="event.preventDefault(); navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied!'))">Share</button>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="event.preventDefault(); window.bingoApp.authManager.showGameResults('${game.id}', '${game.name}')">Results</button>
                     <button type="button" class="btn btn-sm btn-danger" onclick="event.preventDefault(); window.bingoApp.authManager.deleteGame('${game.id}')">Delete</button>
                 </div>
             `;
             gamesList.appendChild(card);
         });
+    }
+
+    async showGameResults(gameId, gameName) {
+        try {
+            const response = await fetch(`${CONFIG.API_BASE_URL}/games/${gameId}/results`, {
+                headers: this.getAuthHeaders()
+            });
+
+            if (response.ok) {
+                const sessions = await response.json();
+                this.renderResultsModal(gameName, sessions);
+            } else {
+                alert('Failed to fetch results');
+            }
+        } catch (error) {
+            console.error('Error fetching results:', error);
+            alert('Error fetching results');
+        }
+    }
+
+    renderResultsModal(gameName, sessions) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'block';
+        modal.style.zIndex = '2000';
+
+        let content = `
+            <div class="modal-content" style="max-width: 600px;">
+                <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                <h2>Results: ${gameName}</h2>
+                <div class="results-list" style="max-height: 400px; overflow-y: auto; margin-top: 20px;">
+        `;
+
+        if (sessions.length === 0) {
+            content += '<p>No players yet.</p>';
+        } else {
+            content += `
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #eee; text-align: left;">
+                            <th style="padding: 10px;">Player</th>
+                            <th style="padding: 10px;">Status</th>
+                            <th style="padding: 10px;">Completed At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            sessions.forEach(session => {
+                const completed = session.isCompleted ? '✅ Completed' : 'Playing';
+                const time = session.completedAt ? new Date(session.completedAt).toLocaleString() : '-';
+                content += `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 10px;">${session.playerName || 'Anonymous'}</td>
+                        <td style="padding: 10px;">${completed}</td>
+                        <td style="padding: 10px;">${time}</td>
+                    </tr>
+                `;
+            });
+
+            content += `
+                    </tbody>
+                </table>
+            `;
+        }
+
+        content += `
+                </div>
+                <div style="margin-top: 20px; text-align: right;">
+                    <button class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Close</button>
+                </div>
+            </div>
+        `;
+
+        modal.innerHTML = content;
+        document.body.appendChild(modal);
     }
 
     async deleteGame(gameId) {
