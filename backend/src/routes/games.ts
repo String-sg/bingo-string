@@ -1,9 +1,8 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
-import { authenticateGoogle, optionalAuth, AuthenticatedRequest } from '../middleware/auth';
+import prisma from '../lib/prisma';
 
 const router = express.Router();
-const prisma = new PrismaClient();
+
 
 // GET /api/games - Get user's games (requires auth)
 router.get('/', authenticateGoogle, async (req: AuthenticatedRequest, res) => {

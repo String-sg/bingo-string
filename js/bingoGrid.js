@@ -9,8 +9,8 @@ export class BingoGrid {
         this.bingoLines = [];
     }
 
-    async createGrid() {
-        const challenges = await this.challengeLoader.loadChallenges();
+    async createGrid(customChallenges = null) {
+        const challenges = customChallenges || await this.challengeLoader.loadChallenges();
 
         this.container.innerHTML = '';
         this.cells = [];

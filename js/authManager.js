@@ -127,7 +127,7 @@ export class AuthManager {
         try {
             const base64Url = token.split('.')[1];
             const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
                 return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
             }).join(''));
             return JSON.parse(jsonPayload);
@@ -253,6 +253,78 @@ export class AuthManager {
         const adminDashboard = document.getElementById('adminDashboard');
         if (adminDashboard) {
             adminDashboard.style.display = 'block';
+            this.fetchUserGames();
+        }
+    }
+
+    async fetchUserGames() {
+        try {
+            const response = await fetch(`${CONFIG.API_BASE_URL}/games`, {
+                headers: this.getAuthHeaders()
+            });
+
+            if (response.ok) {
+                const games = await response.json();
+                this.renderGamesList(games);
+            }
+        } catch (error) {
+            console.error('Failed to fetch games:', error);
+        }
+    }
+
+    renderGamesList(games) {
+        const gamesList = document.getElementById('gamesList');
+        const emptyState = document.getElementById('emptyState');
+
+        if (!gamesList || !emptyState) return;
+
+        if (games.length === 0) {
+            gamesList.style.display = 'none';
+            emptyState.style.display = 'block';
+            return;
+        }
+
+        emptyState.style.display = 'none';
+        gamesList.style.display = 'grid';
+        gamesList.innerHTML = '';
+
+        games.forEach(game => {
+            const card = document.createElement('div');
+            card.className = 'game-card';
+
+            const date = new Date(game.updatedAt).toLocaleDateString();
+            const shareUrl = `${window.location.origin}/${this.user.email}/${game.id}`;
+
+            card.innerHTML = `
+                <h3>${game.name}</h3>
+                <p class="game-meta">Updated: ${date}</p>
+                <div class="game-actions">
+                    <a href="${shareUrl}" class="btn btn-sm btn-primary">Play</a>
+                    <button class="btn btn-sm btn-outline" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied!'))">Share</button>
+                    <button class="btn btn-sm btn-danger" onclick="window.bingoApp.authManager.deleteGame('${game.id}')">Delete</button>
+                </div>
+            `;
+            gamesList.appendChild(card);
+        });
+    }
+
+    async deleteGame(gameId) {
+        if (!confirm('Are you sure you want to delete this game?')) return;
+
+        try {
+            const response = await fetch(`${CONFIG.API_BASE_URL}/games/${gameId}`, {
+                method: 'DELETE',
+                headers: this.getAuthHeaders()
+            });
+
+            if (response.ok) {
+                this.fetchUserGames();
+            } else {
+                alert('Failed to delete game');
+            }
+        } catch (error) {
+            console.error('Error deleting game:', error);
+            alert('Error deleting game');
         }
     }
 

@@ -26,7 +26,15 @@ class BingoApp {
             console.log('🔧 Configuration loaded:', config);
             console.log('🔧 Google Client ID from config:', config.GOOGLE_CLIENT_ID);
 
-            await this.setupGrid();
+            // Check for custom game URL: /email/uuid
+            const pathParts = window.location.pathname.split('/').filter(p => p);
+            if (pathParts.length >= 2 && pathParts[0].includes('@')) {
+                const gameId = pathParts[1];
+                await this.loadCustomGame(gameId);
+            } else {
+                await this.setupGrid();
+            }
+
             this.setupEventListeners();
             this.setupTouchManager();
             this.loadCellImages(); // Load saved images on startup
@@ -36,14 +44,49 @@ class BingoApp {
         }
     }
 
-    async setupGrid() {
+    async setupGrid(customChallenges = null) {
         const gridContainer = document.querySelector('.bingo-grid');
         if (!gridContainer) {
             throw new Error('Bingo grid container not found');
         }
 
         this.bingoGrid = new BingoGrid(gridContainer, this.challengeLoader);
-        await this.bingoGrid.createGrid();
+        await this.bingoGrid.createGrid(customChallenges);
+    }
+
+    async loadCustomGame(gameId) {
+        try {
+            console.log(`🎮 Loading custom game: ${gameId}`);
+            const response = await fetch(`${(await getConfig()).API_BASE_URL}/games/${gameId}/play`);
+
+            if (!response.ok) {
+                throw new Error('Game not found');
+            }
+
+            const game = await response.json();
+            console.log('🎮 Game loaded:', game);
+
+            // Update page title
+            document.title = `${game.name} - Bingo`;
+
+            // Update UI to show this is a custom game
+            const footer = document.querySelector('.footer');
+            if (footer) {
+                const info = document.createElement('p');
+                info.style.color = '#666';
+                info.textContent = `Playing: ${game.name} (Created by ${game.creator.name})`;
+                footer.insertBefore(info, footer.firstChild);
+            }
+
+            // Setup grid with custom challenges
+            await this.setupGrid(game.challengesJson);
+
+        } catch (error) {
+            console.error('Failed to load custom game:', error);
+            this.showError('Failed to load the game. It might be private or deleted.');
+            // Fallback to default grid
+            await this.setupGrid();
+        }
     }
 
     setupEventListeners() {
@@ -344,7 +387,7 @@ class BingoApp {
     async downloadAllImages() {
         const cellImages = JSON.parse(localStorage.getItem('bingoCellImages') || '{}');
         const imageEntries = Object.entries(cellImages);
-        
+
         if (imageEntries.length === 0) {
             alert('No images to download. Complete some challenges first!');
             return;
@@ -356,7 +399,7 @@ class BingoApp {
             const challenge = this.challengeLoader.getChallenge(parseInt(index));
             const challengeText = challenge ? challenge.text : `Challenge ${parseInt(index) + 1}`;
             this.downloadSingleImage(imageData, `bingo-${parseInt(index) + 1}-${challengeText.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`);
-            
+
             // Track download event in Google Analytics
             if (typeof gtag !== 'undefined') {
                 gtag('event', 'download_images', {
@@ -377,7 +420,7 @@ class BingoApp {
                 const challenge = this.challengeLoader.getChallenge(parseInt(index));
                 const challengeText = challenge ? challenge.text : `Challenge ${parseInt(index) + 1}`;
                 const filename = `bingo-${parseInt(index) + 1}-${challengeText.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`;
-                
+
                 // Convert data URL to blob
                 const response = await fetch(imageData);
                 const blob = await response.blob();
@@ -385,7 +428,7 @@ class BingoApp {
             }
 
             // Generate ZIP and download
-            const zipBlob = await zip.generateAsync({type: 'blob'});
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
             const url = URL.createObjectURL(zipBlob);
             const a = document.createElement('a');
             a.href = url;

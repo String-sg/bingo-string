@@ -1,8 +1,10 @@
 import { getConfig } from './config.js';
+import { AuthManager } from './authManager.js';
 
 class GameCreationApp {
     constructor() {
         this.config = null;
+        this.authManager = new AuthManager();
         this.init();
     }
 
@@ -75,7 +77,7 @@ class GameCreationApp {
         }
     }
 
-    handleGameSubmit() {
+    async handleGameSubmit() {
         // Get game name
         const gameNameInput = document.getElementById('gameName');
         const gameName = gameNameInput?.value.trim();
@@ -87,47 +89,78 @@ class GameCreationApp {
         }
 
         // Get all questions from the grid
-        const questions = [];
+        const challenges = [];
         const cells = document.querySelectorAll('.editor-cell');
 
         cells.forEach((cell, index) => {
+            let text = '';
             if (index === 12) {
-                questions.push('FREE'); // Center cell
+                text = 'FREE'; // Center cell
             } else {
-                const question = cell.value.trim();
-                if (!question) {
-                    questions.push(`Question ${index + 1}`); // Default placeholder
-                } else {
-                    questions.push(question);
-                }
+                text = cell.value.trim() || `Question ${index + 1}`;
             }
+
+            challenges.push({
+                id: `q${index}`,
+                text: text
+            });
         });
 
-        // Create game object
-        const gameData = {
-            name: gameName,
-            questions: questions,
-            createdAt: new Date().toISOString(),
-            createdBy: this.getUserEmail() || 'anonymous'
-        };
+        try {
+            const createBtn = document.getElementById('createGameBtn');
+            if (createBtn) {
+                createBtn.disabled = true;
+                createBtn.textContent = 'Creating...';
+            }
 
-        console.log('Creating game:', gameData);
-
-        // For now, show success message and redirect
-        // Later this will call the backend API
-        alert(`Game "${gameName}" created successfully!\n\nThis will soon save to your games list and provide a shareable link.`);
-
-        // Track game creation
-        if (typeof gtag !== 'undefined') {
-            gtag('event', 'game_created', {
-                'event_category': 'engagement',
-                'event_label': 'custom_game',
-                'value': 1
+            const response = await fetch(`${this.config.API_BASE_URL}/games`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...this.authManager.getAuthHeaders()
+                },
+                body: JSON.stringify({
+                    name: gameName,
+                    challenges: challenges,
+                    isPublic: true
+                })
             });
-        }
 
-        // Redirect back to main page (or admin dashboard if logged in)
-        window.location.href = '/';
+            if (!response.ok) {
+                throw new Error(`Failed to create game: ${response.status}`);
+            }
+
+            const game = await response.json();
+            console.log('Game created:', game);
+
+            // Generate shareable link
+            const shareLink = `${window.location.origin}/${game.creatorEmail}/${game.id}`;
+
+            // Show success and redirect
+            alert(`Game created successfully!\n\nShare this link:\n${shareLink}`);
+
+            // Track game creation
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'game_created', {
+                    'event_category': 'engagement',
+                    'event_label': 'custom_game',
+                    'value': 1
+                });
+            }
+
+            // Redirect to the new game
+            window.location.href = `/${game.creatorEmail}/${game.id}`;
+
+        } catch (error) {
+            console.error('Error creating game:', error);
+            this.showError('Failed to create game. Please try again.');
+
+            const createBtn = document.getElementById('createGameBtn');
+            if (createBtn) {
+                createBtn.disabled = false;
+                createBtn.textContent = 'Create Game';
+            }
+        }
     }
 
     toggleEditMode() {

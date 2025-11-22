@@ -72,8 +72,14 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📝 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🌐 CORS origins: ${process.env.CORS_ORIGINS}`);
-});
+// Export the app for Vercel
+export default app;
+
+// Only listen if not running in Vercel (local development)
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📝 Environment: ${process.env.NODE_ENV}`);
+    console.log(`🌐 CORS origins: ${process.env.CORS_ORIGINS}`);
+  });
+}
