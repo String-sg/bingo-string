@@ -208,4 +208,114 @@ router.get('/:id/play', async (req, res) => {
   }
 });
 
+// POST /api/games/:id/join - Join a game session
+router.post('/:id/join', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { sessionId, playerName } = req.body;
+
+    if (!sessionId || !playerName) {
+      return res.status(400).json({ error: 'Session ID and Player Name are required' });
+    }
+
+    // Check if game exists
+    const game = await prisma.game.findUnique({
+      where: { id }
+    });
+
+    if (!game) {
+      return res.status(404).json({ error: 'Game not found' });
+    }
+
+    // Find or create session
+    const session = await prisma.gameSession.upsert({
+      where: {
+        gameId_sessionId: {
+          gameId: id,
+          sessionId
+        }
+      },
+      update: {
+        playerName // Update name if changed
+      },
+      create: {
+        gameId: id,
+        sessionId,
+        playerName,
+        progressJson: []
+      }
+    });
+
+    res.json(session);
+  } catch (error) {
+    console.error('Error joining game:', error);
+    res.status(500).json({ error: 'Failed to join game' });
+  }
+});
+
+// POST /api/games/:id/progress - Update session progress
+router.post('/:id/progress', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { sessionId, progressJson, isCompleted } = req.body;
+
+    if (!sessionId || !progressJson) {
+      return res.status(400).json({ error: 'Session ID and progress are required' });
+    }
+
+    const session = await prisma.gameSession.update({
+      where: {
+        gameId_sessionId: {
+          gameId: id,
+          sessionId
+        }
+      },
+      data: {
+        progressJson,
+        isCompleted: isCompleted || false,
+        completedAt: isCompleted ? new Date() : null
+      }
+    });
+
+    res.json(session);
+  } catch (error) {
+    console.error('Error updating progress:', error);
+    res.status(500).json({ error: 'Failed to update progress' });
+  }
+});
+
+// GET /api/games/:id/results - Get game results (Leaderboard) - Requires Auth
+router.get('/:id/results', authenticateGoogle, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verify ownership
+    const game = await prisma.game.findUnique({
+      where: { id }
+    });
+
+    if (!game) {
+      return res.status(404).json({ error: 'Game not found' });
+    }
+
+    if (game.creatorEmail !== req.user!.email) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    const sessions = await prisma.gameSession.findMany({
+      where: { gameId: id },
+      orderBy: [
+        { isCompleted: 'desc' }, // Completed first
+        { completedAt: 'asc' },  // Earliest completion first
+        { updatedAt: 'desc' }    // Recently active
+      ]
+    });
+
+    res.json(sessions);
+  } catch (error) {
+    console.error('Error fetching results:', error);
+    res.status(500).json({ error: 'Failed to fetch results' });
+  }
+});
+
 module.exports = router;

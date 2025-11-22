@@ -151,6 +151,45 @@ export class ModalManager {
         return this.currentImageData;
     }
 
+    showNamePrompt(callback) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'block';
+        modal.style.zIndex = '2000'; // Ensure it's on top
+
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h2>Welcome!</h2>
+                <p>Please enter your name to join the game:</p>
+                <input type="text" id="playerNameInput" placeholder="Your Name" style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px;">
+                <button class="btn btn-primary" id="joinGameBtn" style="width: 100%;">Join Game</button>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        const input = modal.querySelector('#playerNameInput');
+        const btn = modal.querySelector('#joinGameBtn');
+
+        const submit = () => {
+            const name = input.value.trim();
+            if (name) {
+                modal.remove();
+                callback(name);
+            } else {
+                input.style.borderColor = 'red';
+            }
+        };
+
+        btn.addEventListener('click', submit);
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') submit();
+        });
+
+        // Focus input
+        setTimeout(() => input.focus(), 100);
+    }
+
     clearCurrentData() {
         this.currentCellIndex = null;
         this.currentImageData = null;
