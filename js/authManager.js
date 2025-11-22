@@ -147,19 +147,25 @@ export class AuthManager {
 
     loadStoredSession() {
         try {
+            console.log('🔧 AuthManager: Loading stored session...');
             const stored = localStorage.getItem('bingoAuth');
             if (stored) {
                 const session = JSON.parse(stored);
+                console.log('🔧 AuthManager: Found stored session', session);
 
                 // Check if session is still valid
                 if (Date.now() - session.timestamp < CONFIG.SESSION_TIMEOUT) {
                     this.user = session.user;
                     this.isAuthenticated = true;
+                    console.log('🔧 AuthManager: Session restored, user:', this.user.email);
                     this.updateUI();
                 } else {
+                    console.log('🔧 AuthManager: Session expired');
                     // Session expired
                     this.logout();
                 }
+            } else {
+                console.log('🔧 AuthManager: No stored session found');
             }
         } catch (error) {
             console.error('Failed to load stored session:', error);
