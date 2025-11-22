@@ -58,23 +58,38 @@ class GameCreationApp {
         if (gameNameInput) {
             gameNameInput.focus();
         }
+
+        // Grid Size change listener
+        const gridSizeInputs = document.querySelectorAll('input[name="gridSize"]');
+        gridSizeInputs.forEach(input => {
+            input.addEventListener('change', () => this.initializeBingoEditor());
+        });
     }
 
     initializeBingoEditor() {
         const gridContainer = document.getElementById('bingoEditorGrid');
         if (!gridContainer) return;
 
+        // Get selected grid size
+        const gridSize = parseInt(document.querySelector('input[name="gridSize"]:checked').value);
+        const totalCells = gridSize * gridSize;
+
         // Clear existing grid
         gridContainer.innerHTML = '';
 
-        // Create 5x5 grid of editable cells
-        for (let i = 0; i < 25; i++) {
+        // Update grid layout
+        gridContainer.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+
+        // Create grid of editable cells
+        for (let i = 0; i < totalCells; i++) {
             const cell = document.createElement('textarea');
             cell.className = 'editor-cell';
             cell.dataset.index = i;
 
-            // Center cell (index 12) is FREE
-            if (i === 12) {
+            // Center cell is FREE only for 5x5
+            const isCenter = gridSize === 5 && i === 12;
+
+            if (isCenter) {
                 cell.className += ' free-cell';
                 cell.value = 'FREE';
                 cell.disabled = true;
@@ -108,13 +123,17 @@ class GameCreationApp {
             return;
         }
 
+        // Get selected grid size
+        const gridSize = parseInt(document.querySelector('input[name="gridSize"]:checked').value);
+
         // Get all questions from the grid
         const challenges = [];
         const cells = document.querySelectorAll('.editor-cell');
 
         cells.forEach((cell, index) => {
             let text = '';
-            if (index === 12) {
+            // Check for center cell in 5x5
+            if (gridSize === 5 && index === 12) {
                 text = 'FREE'; // Center cell
             } else {
                 text = cell.value.trim() || `Question ${index + 1}`;
@@ -142,6 +161,7 @@ class GameCreationApp {
                 body: JSON.stringify({
                     name: gameName,
                     challenges: challenges,
+                    gridSize: gridSize,
                     isPublic: true
                 })
             });
@@ -219,12 +239,33 @@ class GameCreationApp {
                 }
 
                 const cells = document.querySelectorAll('.editor-cell');
+                const gridSize = parseInt(document.querySelector('input[name="gridSize"]:checked').value);
                 let csvIndex = 0;
 
+                // Check for header row and skip if present
+                if (lines.length > 0 && lines[0].toLowerCase().includes('number') && lines[0].toLowerCase().includes('challenge')) {
+                    console.log('Skipping CSV header row');
+                    csvIndex = 1;
+                }
+
                 cells.forEach((cell, index) => {
-                    if (index !== 12) { // Skip center cell
+                    const isCenter = gridSize === 5 && index === 12;
+                    if (!isCenter) { // Skip center cell
                         if (csvIndex < lines.length) {
-                            cell.value = lines[csvIndex].trim().replace(/"/g, '');
+                            // Handle CSV parsing better (remove quotes, split by comma if needed, but here we assume line is just the challenge)
+                            // The user's CSV seems to be "number,challenge", so we might need to split
+                            let line = lines[csvIndex].trim();
+
+                            // Simple CSV parsing: if it has a comma, take the second part
+                            if (line.includes(',')) {
+                                const parts = line.split(',');
+                                // If first part is a number, take the rest
+                                if (!isNaN(parseInt(parts[0]))) {
+                                    line = parts.slice(1).join(',').trim();
+                                }
+                            }
+
+                            cell.value = line.replace(/"/g, '');
                             csvIndex++;
                         }
                     }
