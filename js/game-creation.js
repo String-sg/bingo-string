@@ -5,7 +5,7 @@ class GameCreationApp {
     constructor() {
         this.config = null;
         this.authManager = new AuthManager();
-        this.init();
+        // Don't call init() here, wait for DOMContentLoaded
     }
 
     async init() {
@@ -14,6 +14,11 @@ class GameCreationApp {
             console.log('🔧 Loading configuration for game creation...');
             this.config = await getConfig();
             console.log('🔧 Configuration loaded:', this.config.ENVIRONMENT);
+
+            // Wait for AuthManager to be ready
+            console.log('🔧 Waiting for AuthManager...');
+            await this.authManager.init();
+            console.log('🔧 AuthManager initialized');
 
             this.setupEventListeners();
             this.initializeBingoEditor();
@@ -27,7 +32,13 @@ class GameCreationApp {
         // Create Game button
         const createGameBtn = document.getElementById('createGameBtn');
         if (createGameBtn) {
-            createGameBtn.addEventListener('click', () => this.handleGameSubmit());
+            console.log('🔧 Attaching click listener to createGameBtn');
+            createGameBtn.addEventListener('click', (e) => {
+                console.log('🖱️ Create Game button clicked');
+                this.handleGameSubmit();
+            });
+        } else {
+            console.error('❌ createGameBtn not found in DOM');
         }
 
         // Edit Questions button
@@ -78,6 +89,15 @@ class GameCreationApp {
     }
 
     async handleGameSubmit() {
+        console.log('📝 Handling game submission...');
+
+        // Check if user is logged in
+        if (!this.authManager.isLoggedIn()) {
+            console.log('⚠️ User not logged in, showing auth modal');
+            this.authManager.showAuthModal();
+            return;
+        }
+
         // Get game name
         const gameNameInput = document.getElementById('gameName');
         const gameName = gameNameInput?.value.trim();
@@ -250,6 +270,8 @@ class GameCreationApp {
 }
 
 // Initialize the game creation app when DOM is loaded
+// Initialize the game creation app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new GameCreationApp();
+    const app = new GameCreationApp();
+    app.init();
 });
