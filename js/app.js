@@ -44,14 +44,14 @@ class BingoApp {
         }
     }
 
-    async setupGrid(customChallenges = null) {
+    async setupGrid(customChallenges = null, gridSize = 5) {
         const gridContainer = document.querySelector('.bingo-grid');
         if (!gridContainer) {
             throw new Error('Bingo grid container not found');
         }
 
         this.bingoGrid = new BingoGrid(gridContainer, this.challengeLoader);
-        await this.bingoGrid.createGrid(customChallenges);
+        await this.bingoGrid.createGrid(customChallenges, gridSize);
     }
 
     async loadCustomGame(gameId) {
@@ -79,7 +79,7 @@ class BingoApp {
             }
 
             // Setup grid with custom challenges
-            await this.setupGrid(game.challengesJson);
+            await this.setupGrid(game.challengesJson, game.gridSize || 5);
 
         } catch (error) {
             console.error('Failed to load custom game:', error);
