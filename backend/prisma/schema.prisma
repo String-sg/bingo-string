@@ -42,6 +42,7 @@ model Game {
   @@map("games")
 }
 
+model GameSession {
   id           String    @id @default(cuid())
   gameId       String    @map("game_id")
   sessionId    String    @map("session_id")
