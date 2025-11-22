@@ -21,7 +21,6 @@ model User {
 
   // Relations
   games        Game[]
-  gameSessions GameSession[]
 
   @@map("users")
 }
@@ -31,6 +30,7 @@ model Game {
   name           String
   creatorEmail   String   @map("creator_email")
   challengesJson Json     @map("challenges_json")
+  gridSize       Int      @default(5) @map("grid_size")
   isPublic       Boolean  @default(true) @map("is_public")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
@@ -45,16 +45,17 @@ model Game {
 model GameSession {
   id           String    @id @default(cuid())
   gameId       String    @map("game_id")
-  userEmail    String    @map("user_email")
+  sessionId    String    @map("session_id")
+  playerName   String    @map("player_name")
   progressJson Json      @map("progress_json")
+  isCompleted  Boolean   @default(false) @map("is_completed")
   completedAt  DateTime? @map("completed_at")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
   // Relations
   game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userEmail], references: [email])
 
-  @@unique([gameId, userEmail])
+  @@unique([gameId, sessionId])
   @@map("game_sessions")
 }

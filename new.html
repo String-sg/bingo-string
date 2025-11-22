@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,10 +12,12 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-NM42QYT2MD"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
+        function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
         gtag('config', 'G-NM42QYT2MD');
     </script>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body class="game-creation-body">
@@ -36,6 +39,20 @@
                 <label for="gameName">Game Name</label>
                 <input type="text" id="gameName" placeholder="e.g., Teacher Icebreaker Bingo" maxlength="100">
             </div>
+
+            <div class="form-group">
+                <label>Grid Size</label>
+                <div class="grid-size-options">
+                    <label class="radio-label">
+                        <input type="radio" name="gridSize" value="5" checked>
+                        5x5 (25 Questions)
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="gridSize" value="3">
+                        3x3 (9 Questions)
+                    </label>
+                </div>
+            </div>
         </div>
 
         <!-- Questions Section -->
@@ -52,6 +69,11 @@
                     <span class="btn-icon">📄</span>
                     CSV
                 </button>
+                <a href="sample.csv" download class="btn btn-outline"
+                    style="text-decoration: none; display: inline-flex; align-items: center;">
+                    <span class="btn-icon">⬇️</span>
+                    Sample
+                </a>
             </div>
 
             <div class="bingo-editor-grid" id="bingoEditorGrid">
@@ -71,4 +93,5 @@
 
     <script type="module" src="js/game-creation.js"></script>
 </body>
+
 </html>

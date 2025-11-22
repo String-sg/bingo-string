@@ -1,9 +1,11 @@
 import { getConfig } from './config.js';
+import { AuthManager } from './authManager.js';
 
 class GameCreationApp {
     constructor() {
         this.config = null;
-        this.init();
+        this.authManager = new AuthManager();
+        // Don't call init() here, wait for DOMContentLoaded
     }
 
     async init() {
@@ -12,6 +14,11 @@ class GameCreationApp {
             console.log('🔧 Loading configuration for game creation...');
             this.config = await getConfig();
             console.log('🔧 Configuration loaded:', this.config.ENVIRONMENT);
+
+            // Wait for AuthManager to be ready
+            console.log('🔧 Waiting for AuthManager...');
+            await this.authManager.init();
+            console.log('🔧 AuthManager initialized');
 
             this.setupEventListeners();
             this.initializeBingoEditor();
@@ -25,7 +32,13 @@ class GameCreationApp {
         // Create Game button
         const createGameBtn = document.getElementById('createGameBtn');
         if (createGameBtn) {
-            createGameBtn.addEventListener('click', () => this.handleGameSubmit());
+            console.log('🔧 Attaching click listener to createGameBtn');
+            createGameBtn.addEventListener('click', (e) => {
+                console.log('🖱️ Create Game button clicked');
+                this.handleGameSubmit();
+            });
+        } else {
+            console.error('❌ createGameBtn not found in DOM');
         }
 
         // Edit Questions button
@@ -45,23 +58,38 @@ class GameCreationApp {
         if (gameNameInput) {
             gameNameInput.focus();
         }
+
+        // Grid Size change listener
+        const gridSizeInputs = document.querySelectorAll('input[name="gridSize"]');
+        gridSizeInputs.forEach(input => {
+            input.addEventListener('change', () => this.initializeBingoEditor());
+        });
     }
 
     initializeBingoEditor() {
         const gridContainer = document.getElementById('bingoEditorGrid');
         if (!gridContainer) return;
 
+        // Get selected grid size
+        const gridSize = parseInt(document.querySelector('input[name="gridSize"]:checked').value);
+        const totalCells = gridSize * gridSize;
+
         // Clear existing grid
         gridContainer.innerHTML = '';
 
-        // Create 5x5 grid of editable cells
-        for (let i = 0; i < 25; i++) {
+        // Update grid layout
+        gridContainer.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+
+        // Create grid of editable cells
+        for (let i = 0; i < totalCells; i++) {
             const cell = document.createElement('textarea');
             cell.className = 'editor-cell';
             cell.dataset.index = i;
 
-            // Center cell (index 12) is FREE
-            if (i === 12) {
+            // Center cell is FREE only for 5x5
+            const isCenter = gridSize === 5 && i === 12;
+
+            if (isCenter) {
                 cell.className += ' free-cell';
                 cell.value = 'FREE';
                 cell.disabled = true;
@@ -75,7 +103,16 @@ class GameCreationApp {
         }
     }
 
-    handleGameSubmit() {
+    async handleGameSubmit() {
+        console.log('📝 Handling game submission...');
+
+        // Check if user is logged in
+        if (!this.authManager.isLoggedIn()) {
+            console.log('⚠️ User not logged in, showing auth modal');
+            this.authManager.showAuthModal();
+            return;
+        }
+
         // Get game name
         const gameNameInput = document.getElementById('gameName');
         const gameName = gameNameInput?.value.trim();
@@ -86,48 +123,84 @@ class GameCreationApp {
             return;
         }
 
+        // Get selected grid size
+        const gridSize = parseInt(document.querySelector('input[name="gridSize"]:checked').value);
+
         // Get all questions from the grid
-        const questions = [];
+        const challenges = [];
         const cells = document.querySelectorAll('.editor-cell');
 
         cells.forEach((cell, index) => {
-            if (index === 12) {
-                questions.push('FREE'); // Center cell
+            let text = '';
+            // Check for center cell in 5x5
+            if (gridSize === 5 && index === 12) {
+                text = 'FREE'; // Center cell
             } else {
-                const question = cell.value.trim();
-                if (!question) {
-                    questions.push(`Question ${index + 1}`); // Default placeholder
-                } else {
-                    questions.push(question);
-                }
+                text = cell.value.trim() || `Question ${index + 1}`;
             }
+
+            challenges.push({
+                id: `q${index}`,
+                text: text
+            });
         });
 
-        // Create game object
-        const gameData = {
-            name: gameName,
-            questions: questions,
-            createdAt: new Date().toISOString(),
-            createdBy: this.getUserEmail() || 'anonymous'
-        };
+        try {
+            const createBtn = document.getElementById('createGameBtn');
+            if (createBtn) {
+                createBtn.disabled = true;
+                createBtn.textContent = 'Creating...';
+            }
 
-        console.log('Creating game:', gameData);
-
-        // For now, show success message and redirect
-        // Later this will call the backend API
-        alert(`Game "${gameName}" created successfully!\n\nThis will soon save to your games list and provide a shareable link.`);
-
-        // Track game creation
-        if (typeof gtag !== 'undefined') {
-            gtag('event', 'game_created', {
-                'event_category': 'engagement',
-                'event_label': 'custom_game',
-                'value': 1
+            const response = await fetch(`${this.config.API_BASE_URL}/games`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...this.authManager.getAuthHeaders()
+                },
+                body: JSON.stringify({
+                    name: gameName,
+                    challenges: challenges,
+                    gridSize: gridSize,
+                    isPublic: true
+                })
             });
-        }
 
-        // Redirect back to main page (or admin dashboard if logged in)
-        window.location.href = '/';
+            if (!response.ok) {
+                throw new Error(`Failed to create game: ${response.status}`);
+            }
+
+            const game = await response.json();
+            console.log('Game created:', game);
+
+            // Generate shareable link
+            const shareLink = `${window.location.origin}/play/${game.id}`;
+
+            // Show success and redirect
+            alert(`Game created successfully!\n\nShare this link:\n${shareLink}`);
+
+            // Track game creation
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'game_created', {
+                    'event_category': 'engagement',
+                    'event_label': 'custom_game',
+                    'value': 1
+                });
+            }
+
+            // Redirect to the new game
+            window.location.href = `/play/${game.id}`;
+
+        } catch (error) {
+            console.error('Error creating game:', error);
+            this.showError('Failed to create game. Please try again.');
+
+            const createBtn = document.getElementById('createGameBtn');
+            if (createBtn) {
+                createBtn.disabled = false;
+                createBtn.textContent = 'Create Game';
+            }
+        }
     }
 
     toggleEditMode() {
@@ -166,12 +239,33 @@ class GameCreationApp {
                 }
 
                 const cells = document.querySelectorAll('.editor-cell');
+                const gridSize = parseInt(document.querySelector('input[name="gridSize"]:checked').value);
                 let csvIndex = 0;
 
+                // Check for header row and skip if present
+                if (lines.length > 0 && lines[0].toLowerCase().includes('number') && lines[0].toLowerCase().includes('challenge')) {
+                    console.log('Skipping CSV header row');
+                    csvIndex = 1;
+                }
+
                 cells.forEach((cell, index) => {
-                    if (index !== 12) { // Skip center cell
+                    const isCenter = gridSize === 5 && index === 12;
+                    if (!isCenter) { // Skip center cell
                         if (csvIndex < lines.length) {
-                            cell.value = lines[csvIndex].trim().replace(/"/g, '');
+                            // Handle CSV parsing better (remove quotes, split by comma if needed, but here we assume line is just the challenge)
+                            // The user's CSV seems to be "number,challenge", so we might need to split
+                            let line = lines[csvIndex].trim();
+
+                            // Simple CSV parsing: if it has a comma, take the second part
+                            if (line.includes(',')) {
+                                const parts = line.split(',');
+                                // If first part is a number, take the rest
+                                if (!isNaN(parseInt(parts[0]))) {
+                                    line = parts.slice(1).join(',').trim();
+                                }
+                            }
+
+                            cell.value = line.replace(/"/g, '');
                             csvIndex++;
                         }
                     }
@@ -217,6 +311,8 @@ class GameCreationApp {
 }
 
 // Initialize the game creation app when DOM is loaded
+// Initialize the game creation app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new GameCreationApp();
+    const app = new GameCreationApp();
+    app.init();
 });

@@ -44,7 +44,7 @@ class ConfigManager {
                 this.config = {
                     ...this.config,
                     GOOGLE_CLIENT_ID: getEnvVar('VITE_GOOGLE_CLIENT_ID'),
-                    API_BASE_URL: getEnvVar('VITE_API_BASE_URL', 'http://localhost:3000/api'),
+                    API_BASE_URL: getEnvVar('VITE_API_BASE_URL', '/api'),
                     ENVIRONMENT: 'development'
                 };
                 this.loaded = true;

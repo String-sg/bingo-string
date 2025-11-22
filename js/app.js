@@ -14,6 +14,9 @@ class BingoApp {
         this.touchManager = null;
         this.modalManager = new ModalManager(this.cameraManager);
         this.authManager = new AuthManager();
+        this.sessionId = null;
+        this.gameId = null;
+        this.playerName = null;
 
         this.init();
     }
@@ -26,7 +29,19 @@ class BingoApp {
             console.log('🔧 Configuration loaded:', config);
             console.log('🔧 Google Client ID from config:', config.GOOGLE_CLIENT_ID);
 
-            await this.setupGrid();
+            // Check for custom game URL: /play/{uuid}
+            const pathParts = window.location.pathname.split('/').filter(p => p);
+            if (pathParts.length >= 2 && pathParts[0] === 'play') {
+                this.gameId = pathParts[1];
+                await this.loadCustomGame(this.gameId);
+            } else if (pathParts.length >= 2 && pathParts[0].includes('@')) {
+                // Legacy support for email/uuid format
+                this.gameId = pathParts[1];
+                await this.loadCustomGame(this.gameId);
+            } else {
+                await this.setupGrid();
+            }
+
             this.setupEventListeners();
             this.setupTouchManager();
             this.loadCellImages(); // Load saved images on startup
@@ -36,14 +51,52 @@ class BingoApp {
         }
     }
 
-    async setupGrid() {
+    async setupGrid(customChallenges = null, gridSize = 5) {
         const gridContainer = document.querySelector('.bingo-grid');
         if (!gridContainer) {
             throw new Error('Bingo grid container not found');
         }
 
         this.bingoGrid = new BingoGrid(gridContainer, this.challengeLoader);
-        await this.bingoGrid.createGrid();
+        await this.bingoGrid.createGrid(customChallenges, gridSize);
+    }
+
+    async loadCustomGame(gameId) {
+        try {
+            console.log(`🎮 Loading custom game: ${gameId}`);
+            const response = await fetch(`${(await getConfig()).API_BASE_URL}/games/${gameId}/play`);
+
+            if (!response.ok) {
+                throw new Error('Game not found');
+            }
+
+            const game = await response.json();
+            console.log('🎮 Game loaded:', game);
+
+            // Update page title
+            document.title = `${game.name} - Bingo`;
+
+            // Update UI to show this is a custom game
+            const footer = document.querySelector('.footer');
+            if (footer) {
+                const info = document.createElement('p');
+                info.style.color = '#666';
+                info.textContent = `Playing: ${game.name} (Created by ${game.creator.name})`;
+                footer.insertBefore(info, footer.firstChild);
+            }
+
+            // Setup grid with custom challenges
+            await this.setupGrid(game.challengesJson, game.gridSize || 5);
+
+            // Initialize session
+            this.initializeSession();
+
+        } catch (error) {
+            console.error('Failed to load custom game:', error);
+            this.showError('Failed to load the game. It might be private or deleted.');
+            // Fallback to default grid
+            await this.setupGrid();
+        }
     }
 
     setupEventListeners() {
@@ -192,6 +245,82 @@ class BingoApp {
             if (this.bingoGrid.checkForBingo()) {
                 this.handleBingo();
             }
+
+            // Update session progress
+            this.updateSessionProgress();
+        }
+    }
+
+    async initializeSession() {
+        if (!this.gameId) return;
+
+        const storageKey = `bingoSession_${this.gameId}`;
+        const storedSession = localStorage.getItem(storageKey);
+
+        if (storedSession) {
+            const session = JSON.parse(storedSession);
+            this.sessionId = session.sessionId;
+            this.playerName = session.playerName;
+            console.log(`Resuming session for ${this.playerName}`);
+            this.joinGameSession();
+        } else {
+            // Prompt for name
+            this.modalManager.showNamePrompt((name) => {
+                this.playerName = name;
+                this.sessionId = crypto.randomUUID();
+
+                // Store session locally
+                localStorage.setItem(storageKey, JSON.stringify({
+                    sessionId: this.sessionId,
+                    playerName: this.playerName
+                }));
+
+                this.joinGameSession();
+            });
+        }
+    }
+
+    async joinGameSession() {
+        try {
+            const response = await fetch(`${(await getConfig()).API_BASE_URL}/games/${this.gameId}/join`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sessionId: this.sessionId,
+                    playerName: this.playerName
+                })
+            });
+
+            if (response.ok) {
+                const session = await response.json();
+                console.log('Joined game session:', session);
+
+                // Restore progress if available (optional, for now we rely on local storage for immediate state)
+                // But we could sync from server here if we wanted cross-device support
+            }
+        } catch (error) {
+            console.error('Failed to join session:', error);
+        }
+    }
+
+    async updateSessionProgress() {
+        if (!this.gameId || !this.sessionId) return;
+
+        try {
+            const completedCells = this.bingoGrid.getCompletedCells();
+            const isCompleted = this.bingoGrid.bingoLines.length > 0; // Or some other completion criteria
+
+            await fetch(`${(await getConfig()).API_BASE_URL}/games/${this.gameId}/progress`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sessionId: this.sessionId,
+                    progressJson: completedCells,
+                    isCompleted
+                })
+            });
+        } catch (error) {
+            console.error('Failed to update progress:', error);
         }
     }
 
@@ -344,7 +473,7 @@ class BingoApp {
     async downloadAllImages() {
         const cellImages = JSON.parse(localStorage.getItem('bingoCellImages') || '{}');
         const imageEntries = Object.entries(cellImages);
-        
+
         if (imageEntries.length === 0) {
             alert('No images to download. Complete some challenges first!');
             return;
@@ -356,7 +485,7 @@ class BingoApp {
             const challenge = this.challengeLoader.getChallenge(parseInt(index));
             const challengeText = challenge ? challenge.text : `Challenge ${parseInt(index) + 1}`;
             this.downloadSingleImage(imageData, `bingo-${parseInt(index) + 1}-${challengeText.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`);
-            
+
             // Track download event in Google Analytics
             if (typeof gtag !== 'undefined') {
                 gtag('event', 'download_images', {
@@ -377,7 +506,7 @@ class BingoApp {
                 const challenge = this.challengeLoader.getChallenge(parseInt(index));
                 const challengeText = challenge ? challenge.text : `Challenge ${parseInt(index) + 1}`;
                 const filename = `bingo-${parseInt(index) + 1}-${challengeText.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`;
-                
+
                 // Convert data URL to blob
                 const response = await fetch(imageData);
                 const blob = await response.blob();
@@ -385,7 +514,7 @@ class BingoApp {
             }
 
             // Generate ZIP and download
-            const zipBlob = await zip.generateAsync({type: 'blob'});
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
             const url = URL.createObjectURL(zipBlob);
             const a = document.createElement('a');
             a.href = url;

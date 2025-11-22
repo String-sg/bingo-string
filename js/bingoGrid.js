@@ -9,19 +9,22 @@ export class BingoGrid {
         this.bingoLines = [];
     }
 
-    async createGrid() {
-        const challenges = await this.challengeLoader.loadChallenges();
+    async createGrid(customChallenges = null, gridSize = 5) {
+        const challenges = customChallenges || await this.challengeLoader.loadChallenges();
 
         this.container.innerHTML = '';
         this.cells = [];
+        this.gridSize = gridSize;
 
         // Set CSS grid columns based on grid size
-        this.container.style.gridTemplateColumns = `repeat(${CONFIG.GRID.size}, 1fr)`;
+        this.container.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
 
         // Add grid size class for responsive styling
-        this.container.className = `bingo-grid grid-${CONFIG.GRID.size}x${CONFIG.GRID.size}`;
+        this.container.className = `bingo-grid grid-${gridSize}x${gridSize}`;
 
-        for (let i = 0; i < CONFIG.GRID.size * CONFIG.GRID.size; i++) {
+        const totalCells = gridSize * gridSize;
+
+        for (let i = 0; i < totalCells; i++) {
             const cell = this.createCell(i, challenges[i]);
             this.container.appendChild(cell);
             this.cells.push(cell);
@@ -33,8 +36,9 @@ export class BingoGrid {
         cell.className = 'bingo-cell';
         cell.dataset.index = index;
 
-        // Center cell gets special styling
-        if (index === CONFIG.GRID.centerIndex) {
+        // Center cell gets special styling only for 5x5
+        const centerIndex = this.gridSize === 5 ? 12 : -1;
+        if (index === centerIndex) {
             cell.classList.add('center-cell');
         }
 
@@ -84,21 +88,22 @@ export class BingoGrid {
 
     getBingoLines() {
         const lines = [];
+        const size = this.gridSize || 5;
 
         // Rows
-        for (let row = 0; row < CONFIG.GRID.size; row++) {
+        for (let row = 0; row < size; row++) {
             const line = [];
-            for (let col = 0; col < CONFIG.GRID.size; col++) {
-                line.push(row * CONFIG.GRID.size + col);
+            for (let col = 0; col < size; col++) {
+                line.push(row * size + col);
             }
             lines.push(line);
         }
 
         // Columns
-        for (let col = 0; col < CONFIG.GRID.size; col++) {
+        for (let col = 0; col < size; col++) {
             const line = [];
-            for (let row = 0; row < CONFIG.GRID.size; row++) {
-                line.push(row * CONFIG.GRID.size + col);
+            for (let row = 0; row < size; row++) {
+                line.push(row * size + col);
             }
             lines.push(line);
         }
@@ -106,9 +111,9 @@ export class BingoGrid {
         // Diagonals
         const diagonal1 = [];
         const diagonal2 = [];
-        for (let i = 0; i < CONFIG.GRID.size; i++) {
-            diagonal1.push(i * CONFIG.GRID.size + i);
-            diagonal2.push(i * CONFIG.GRID.size + (CONFIG.GRID.size - 1 - i));
+        for (let i = 0; i < size; i++) {
+            diagonal1.push(i * size + i);
+            diagonal2.push(i * size + (size - 1 - i));
         }
         lines.push(diagonal1, diagonal2);
 

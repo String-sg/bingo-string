@@ -12,5 +12,14 @@ export default defineConfig({
         },
         copyPublicDir: true
     },
-    publicDir: 'public'
+    publicDir: 'public',
+    server: {
+        proxy: {
+            '/api': {
+                target: 'http://localhost:3000',
+                changeOrigin: true,
+                secure: false
+            }
+        }
+    }
 }) 
