@@ -23,7 +23,7 @@
         "vite": "^5.0.0",
         "@prisma/client": "^5.7.1",
         "cors": "^2.8.5",
-        "dotenv": "^16.3.1",
+        "dotenv": "^17.2.3",
         "express": "^4.18.2",
         "google-auth-library": "^9.4.1",
         "helmet": "^7.1.0",
