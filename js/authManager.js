@@ -232,6 +232,7 @@ export class AuthManager {
     async redirectToAdmin() {
         // Call backend to ensure user is created/updated
         try {
+            console.log('🔄 Syncing user with backend at:', `${CONFIG.API_BASE_URL}/auth/login`);
             const response = await fetch(`${CONFIG.API_BASE_URL}/auth/login`, {
                 method: 'POST',
                 headers: this.getAuthHeaders()
@@ -239,12 +240,15 @@ export class AuthManager {
 
             if (response.ok) {
                 const userData = await response.json();
-                console.log('User synced with backend:', userData);
+                console.log('✅ User synced with backend:', userData);
             } else {
-                console.warn('Failed to sync user with backend');
+                console.error('❌ Failed to sync user with backend. Status:', response.status);
+                const errorText = await response.text();
+                console.error('❌ Error response:', errorText);
             }
         } catch (error) {
-            console.warn('Error syncing with backend:', error);
+            console.error('❌ Error syncing with backend:', error);
+            console.error('❌ API_BASE_URL:', CONFIG.API_BASE_URL);
         }
 
         // Show admin dashboard
