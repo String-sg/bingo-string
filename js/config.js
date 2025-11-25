@@ -9,6 +9,7 @@ class ConfigManager {
         return {
             // Default/fallback configuration
             GOOGLE_CLIENT_ID: undefined,
+            GOOGLE_ANALYTICS_ID: undefined,
             API_BASE_URL: 'http://localhost:3000/api',
             ENVIRONMENT: 'development',
             DEBUG_MODE: true,
@@ -44,6 +45,7 @@ class ConfigManager {
                 this.config = {
                     ...this.config,
                     GOOGLE_CLIENT_ID: getEnvVar('VITE_GOOGLE_CLIENT_ID'),
+                    GOOGLE_ANALYTICS_ID: getEnvVar('VITE_GOOGLE_ANALYTICS_ID'),
                     API_BASE_URL: getEnvVar('VITE_API_BASE_URL', '/api'),
                     ENVIRONMENT: 'development'
                 };
@@ -66,6 +68,7 @@ class ConfigManager {
             this.config = {
                 ...this.config,
                 GOOGLE_CLIENT_ID: runtimeConfig.googleClientId,
+                GOOGLE_ANALYTICS_ID: runtimeConfig.googleAnalyticsId,
                 API_BASE_URL: runtimeConfig.apiBaseUrl,
                 ENVIRONMENT: runtimeConfig.environment,
                 DEBUG_MODE: runtimeConfig.debugMode,
@@ -97,6 +100,7 @@ export const getConfig = () => configManager.loadConfig();
 export const CONFIG = {
     // Legacy getters that will be populated after config loads
     get GOOGLE_CLIENT_ID() { return configManager.get('GOOGLE_CLIENT_ID'); },
+    get GOOGLE_ANALYTICS_ID() { return configManager.get('GOOGLE_ANALYTICS_ID'); },
     get API_BASE_URL() { return configManager.get('API_BASE_URL'); },
 
     // Session Configuration
@@ -132,5 +136,5 @@ export const CONFIG = {
     },
 
     // Challenge file - change this filename to load different challenges
-    CHALLENGE_FILE: '2025_1125stringwrap.csv'
+    CHALLENGE_FILE: '/2025_1125stringwrap.csv'
 }; 
