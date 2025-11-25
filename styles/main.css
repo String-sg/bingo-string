@@ -127,7 +127,7 @@ html {
 
 .bingo-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 3px;
     background: rgba(255, 255, 255, 0.1);
     padding: 10px;
@@ -138,6 +138,8 @@ html {
     margin: 0 auto;
     transform-origin: center center;
     transition: transform var(--transition-fast);
+    overflow: hidden;
+    /* Prevent cells from spilling out */
 }
 
 .grid-container {
