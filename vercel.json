@@ -6,7 +6,11 @@
             "destination": "/api/index.ts"
         },
         {
-            "source": "/(.*)",
+            "source": "/play/(.*)",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/((?!styles/|js/|.*\\..*).*)",
             "destination": "/index.html"
         }
     ],
