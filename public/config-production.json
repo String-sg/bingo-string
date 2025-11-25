@@ -1,7 +1,7 @@
 {
   "environment": "production",
   "googleClientId": "124864716521-psk1222tjg1uq20kh5q8b4ovlipt1sgl.apps.googleusercontent.com",
-  "apiBaseUrl": "https://your-production-backend.com/api",
+  "apiBaseUrl": "/api",
   "debugMode": false,
   "logLevel": "error"
 }
