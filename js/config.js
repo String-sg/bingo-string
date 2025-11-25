@@ -132,5 +132,5 @@ export const CONFIG = {
     },
 
     // Challenge file - change this filename to load different challenges
-    CHALLENGE_FILE: '2025_1118_nLDSRetro.csv'
+    CHALLENGE_FILE: '2025_1125stringwrap.csv'
 }; 
