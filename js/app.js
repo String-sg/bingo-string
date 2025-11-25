@@ -45,9 +45,36 @@ class BingoApp {
             this.setupEventListeners();
             this.setupTouchManager();
             this.loadCellImages(); // Load saved images on startup
+            this.setupAnalytics(); // Initialize Google Analytics
         } catch (error) {
             console.error('Failed to initialize app:', error);
             this.showError('Failed to load the game. Please refresh the page.');
+        }
+    }
+
+    async setupAnalytics() {
+        try {
+            const config = await getConfig();
+            const gaId = config.GOOGLE_ANALYTICS_ID;
+
+            if (gaId) {
+                // Load GA script
+                const script = document.createElement('script');
+                script.async = true;
+                script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+                document.head.appendChild(script);
+
+                // Initialize dataLayer
+                window.dataLayer = window.dataLayer || [];
+                function gtag() { dataLayer.push(arguments); }
+                window.gtag = gtag; // Make it global
+                gtag('js', new Date());
+                gtag('config', gaId);
+
+                console.log('📊 Google Analytics initialized');
+            }
+        } catch (error) {
+            console.warn('Failed to setup analytics:', error);
         }
     }
 
