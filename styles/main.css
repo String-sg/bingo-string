@@ -189,6 +189,19 @@ html {
     font-weight: 500;
 }
 
+/* Add backgrounds only when cell has a background image */
+.bingo-cell[style*="background-image"] .cell-number {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.bingo-cell[style*="background-image"] .cell-text {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 6px 10px;
+    border-radius: 8px;
+}
+
 /* Enhanced font sizes for 3x3 grid */
 .grid-3x3 .cell-text {
     font-size: 1em;
