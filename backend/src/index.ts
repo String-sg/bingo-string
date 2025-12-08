@@ -54,9 +54,15 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes will be added here
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/games', require('./routes/games'));
+// Import routes
+import authRoutes from './routes/auth';
+import gamesRoutes from './routes/games';
+import defaultSessionsRoutes from './routes/defaultSessions';
+
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/games', gamesRoutes);
+app.use('/api/default-sessions', defaultSessionsRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
