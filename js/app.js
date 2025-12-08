@@ -39,7 +39,9 @@ class BingoApp {
                 this.gameId = pathParts[1];
                 await this.loadCustomGame(this.gameId);
             } else {
+                // Default game - initialize tracking
                 await this.setupGrid();
+                await this.initializeDefaultGameSession();
             }
 
             this.setupEventListeners();
@@ -307,6 +309,40 @@ class BingoApp {
         }
     }
 
+    async initializeDefaultGameSession() {
+        const storageKey = 'defaultBingoSession';
+        const storedSession = localStorage.getItem(storageKey);
+
+        if (storedSession) {
+            const session = JSON.parse(storedSession);
+            this.sessionId = session.sessionId;
+            console.log('Resuming default game session');
+        } else {
+            // Generate new session for default game
+            this.sessionId = crypto.randomUUID();
+
+            // Store session locally
+            localStorage.setItem(storageKey, JSON.stringify({
+                sessionId: this.sessionId,
+                createdAt: new Date().toISOString()
+            }));
+
+            console.log('Created new default game session');
+        }
+
+        // Create session in backend
+        await this.createDefaultGameSession();
+
+        // Track game start in Google Analytics
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'default_game_start', {
+                'event_category': 'engagement',
+                'event_label': 'default_bingo',
+                'value': 1
+            });
+        }
+    }
+
     async joinGameSession() {
         try {
             const response = await fetch(`${(await getConfig()).API_BASE_URL}/games/${this.gameId}/join`, {
@@ -327,6 +363,30 @@ class BingoApp {
             }
         } catch (error) {
             console.error('Failed to join session:', error);
+        }
+    }
+
+    async createDefaultGameSession() {
+        try {
+            const config = await getConfig();
+            const response = await fetch(`${config.API_BASE_URL}/default-sessions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sessionId: this.sessionId,
+                    challengeSet: CONFIG.CHALLENGE_FILE,
+                    gridSize: CONFIG.GRID.size
+                })
+            });
+
+            if (response.ok) {
+                const session = await response.json();
+                console.log('Created default game session:', session);
+            } else {
+                console.error('Failed to create default session:', response.status);
+            }
+        } catch (error) {
+            console.error('Error creating default session:', error);
         }
     }
 
