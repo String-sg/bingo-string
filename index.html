@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>String - Bingo</title>
+    <meta name="description" content="Complete String challenges and get BINGO! An interactive team bonding game.">
+    <meta name="keywords" content="bingo, game, string, interactive, challenges, team bonding">
+
+
+
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script type="module" crossorigin src="/assets/main-C5J4aOVg.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/authManager-By_oS-D4.js">
+  <link rel="stylesheet" crossorigin href="/assets/authManager-C0n1L40o.css">
+</head>
+
+<body>
+    <div class="grid-container">
+        <div class="bingo-grid" id="bingoGrid">
+            <!-- Grid will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <div class="footer">
+        <button class="btn btn-secondary" id="resetBtn">Reset</button>
+        <button class="btn btn-primary" id="downloadBtn">Download Images</button>
+        <div id="userInfo" style="display: none; margin: 10px 0;">
+            <img id="userAvatar" style="width: 32px; height: 32px; border-radius: 50%; margin-right: 8px;">
+            <span id="userName"></span>
+            <button class="btn btn-secondary" id="logoutBtn" style="margin-left: 10px;">Logout</button>
+        </div>
+        <hr style="border: none; border-top: 1px solid #333; margin: 20px 0; opacity: 0.3;">
+        <p>Made with ❤️ by <a href="https://for.edu.sg/str-bingo-tree" target="_blank">String Team</a></p>
+        <p style="font-size: 0.7em; color: #666; margin-top: 10px;">This bingo build is inspired by Seng Kwang (Physics
+            educator @ TJC)</p>
+        <button class="btn btn-outline" id="authBtn">🎯 Make Your Own</button>
+        <button class="btn btn-outline" id="makeYourOwnBtn" style="display: none;">🎯 Make Your Own</button>
+    </div>
+
+    <!-- Options Modal -->
+    <div id="optionsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Complete Challenge</h2>
+            <button class="btn btn-primary" id="cameraBtn">📷 Take Photo</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📁 Upload
+                Image</button>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        </div>
+    </div>
+
+    <!-- Camera Modal -->
+    <div id="cameraModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Take Photo</h2>
+            <div class="camera-container">
+                <video id="video" autoplay playsinline></video>
+            </div>
+            <div class="camera-controls">
+                <button class="btn btn-primary" id="captureBtn">📸 Capture</button>
+                <button class="btn btn-secondary" id="switchCameraBtn">🔄 Switch Camera</button>
+                <button class="btn btn-outline" id="uploadBtn">📁 Upload Image</button>
+                <input type="file" id="cameraFileInput" accept="image/*" style="display: none;">
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Bingo Modal -->
+    <div id="bingoModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>🎉 BINGO! 🎉</h2>
+            <p>Congratulations! You've completed a line!</p>
+            <p>You've successfully completed 5 challenges in a row!</p>
+            <button class="btn btn-primary" id="celebrateBtn">🎊 Celebrate!</button>
+        </div>
+    </div>
+
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>🎯 Create Your Own Bingo</h2>
+            <p>Sign in with Google to create and manage your own custom bingo games</p>
+            <div id="googleSignInBtn" style="margin: 20px 0; text-align: center;"></div>
+            <p style="font-size: 0.9em; color: #666; margin-top: 20px;">
+                By signing in, you can create unlimited custom bingo games and share them with your teams.
+            </p>
+        </div>
+    </div>
+
+
+    <div id="adminDashboard" class="admin-dashboard" style="display: none;">
+        <div>
+            <button class="btn btn-primary admin-create-btn" id="createNewGameBtn">
+                <span class="btn-icon">+</span>
+                Create New Game
+            </button>
+        </div>
+
+        <div class="admin-content">
+            <div class="games-section">
+                <div class="empty-state" id="emptyState">
+                    <h2>No games yet</h2>
+                    <p>Create your first bingo game to get started</p>
+                    <button class="btn btn-primary" id="createNewGameBtn2">
+                        <span class="btn-icon">+</span>
+                        Create New Game
+                    </button>
+                </div>
+
+                <div class="games-list" id="gamesList" style="display: none;">
+
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-footer">
+            <button class="btn btn-outline" id="backToGameBtn">← Back to Game</button>
+        </div>
+    </div>
+
+    <!-- Status Messages -->
+    <div class="status" id="status"></div>
+
+</body>
+
+</html>
