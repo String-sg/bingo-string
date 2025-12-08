@@ -54,9 +54,10 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes will be added here
+// API routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/games', require('./routes/games'));
+app.use('/api/default-sessions', require('./routes/defaultSessions'));
 
 // 404 handler
 app.use('*', (req, res) => {

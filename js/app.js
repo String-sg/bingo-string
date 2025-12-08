@@ -39,7 +39,9 @@ class BingoApp {
                 this.gameId = pathParts[1];
                 await this.loadCustomGame(this.gameId);
             } else {
+                // Default game - initialize tracking
                 await this.setupGrid();
+                await this.initializeDefaultGameSession();
             }
 
             this.setupEventListeners();
@@ -307,6 +309,40 @@ class BingoApp {
         }
     }
 
+    async initializeDefaultGameSession() {
+        const storageKey = 'defaultBingoSession';
+        const storedSession = localStorage.getItem(storageKey);
+
+        if (storedSession) {
+            const session = JSON.parse(storedSession);
+            this.sessionId = session.sessionId;
+            console.log('Resuming default game session');
+        } else {
+            // Generate new session for default game
+            this.sessionId = crypto.randomUUID();
+
+            // Store session locally
+            localStorage.setItem(storageKey, JSON.stringify({
+                sessionId: this.sessionId,
+                createdAt: new Date().toISOString()
+            }));
+
+            console.log('Created new default game session');
+        }
+
+        // Create session in backend
+        await this.createDefaultGameSession();
+
+        // Track game start in Google Analytics
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'default_game_start', {
+                'event_category': 'engagement',
+                'event_label': 'default_bingo',
+                'value': 1
+            });
+        }
+    }
+
     async joinGameSession() {
         try {
             const response = await fetch(`${(await getConfig()).API_BASE_URL}/games/${this.gameId}/join`, {
@@ -330,24 +366,85 @@ class BingoApp {
         }
     }
 
-    async updateSessionProgress() {
-        if (!this.gameId || !this.sessionId) return;
-
+    async createDefaultGameSession() {
         try {
-            const completedCells = this.bingoGrid.getCompletedCells();
-            const isCompleted = this.bingoGrid.bingoLines.length > 0; // Or some other completion criteria
-
-            await fetch(`${(await getConfig()).API_BASE_URL}/games/${this.gameId}/progress`, {
+            const config = await getConfig();
+            const response = await fetch(`${config.API_BASE_URL}/default-sessions`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     sessionId: this.sessionId,
+                    challengeSet: CONFIG.CHALLENGE_FILE,
+                    gridSize: CONFIG.GRID.size
+                })
+            });
+
+            if (response.ok) {
+                const session = await response.json();
+                console.log('Created default game session:', session);
+            } else {
+                console.error('Failed to create default session:', response.status);
+            }
+        } catch (error) {
+            console.error('Error creating default session:', error);
+        }
+    }
+
+    async updateSessionProgress() {
+        if (!this.sessionId) return;
+
+        try {
+            const completedCells = this.bingoGrid.getCompletedCells();
+            const isCompleted = this.bingoGrid.bingoLines.length > 0;
+
+            if (this.gameId) {
+                // Custom game progress
+                await fetch(`${(await getConfig()).API_BASE_URL}/games/${this.gameId}/progress`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: this.sessionId,
+                        progressJson: completedCells,
+                        isCompleted
+                    })
+                });
+            } else {
+                // Default game progress
+                await this.updateDefaultGameProgress(completedCells, isCompleted);
+            }
+        } catch (error) {
+            console.error('Failed to update progress:', error);
+        }
+    }
+
+    async updateDefaultGameProgress(completedCells, isCompleted) {
+        try {
+            const config = await getConfig();
+            const response = await fetch(`${config.API_BASE_URL}/default-sessions/${this.sessionId}/progress`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
                     progressJson: completedCells,
                     isCompleted
                 })
             });
+
+            if (response.ok) {
+                console.log('Updated default game progress');
+
+                // Track completion in Google Analytics
+                if (isCompleted && typeof gtag !== 'undefined') {
+                    gtag('event', 'default_game_completed', {
+                        'event_category': 'engagement',
+                        'event_label': 'default_bingo',
+                        'value': completedCells.length
+                    });
+                }
+            } else {
+                console.error('Failed to update default progress:', response.status);
+            }
         } catch (error) {
-            console.error('Failed to update progress:', error);
+            console.error('Error updating default progress:', error);
         }
     }
 
@@ -368,9 +465,12 @@ class BingoApp {
 
         // Track photo taken event in Google Analytics
         if (typeof gtag !== 'undefined') {
-            gtag('event', 'photo_taken', {
+            const eventLabel = this.gameId ? `custom_cell_${cellIndex}` : `default_cell_${cellIndex}`;
+            const eventName = this.gameId ? 'photo_taken' : 'default_cell_completed';
+
+            gtag('event', eventName, {
                 'event_category': 'engagement',
-                'event_label': `cell_${cellIndex}`,
+                'event_label': eventLabel,
                 'value': 1
             });
         }

@@ -3,7 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../../node_modules/.prisma/client"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -59,4 +59,18 @@ model GameSession {
 
   @@unique([gameId, sessionId])
   @@map("game_sessions")
+}
+
+model DefaultGameSession {
+  id           String    @id @default(cuid())
+  sessionId    String    @unique @map("session_id")
+  challengeSet String    @map("challenge_set") // CSV filename used
+  gridSize     Int       @default(5) @map("grid_size")
+  progressJson Json      @map("progress_json")
+  isCompleted  Boolean   @default(false) @map("is_completed")
+  completedAt  DateTime? @map("completed_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("default_game_sessions")
 }
