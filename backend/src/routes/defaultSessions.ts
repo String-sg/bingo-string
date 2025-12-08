@@ -57,7 +57,7 @@ router.post('/:sessionId/progress', async (req, res) => {
     });
 
     res.json(session);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating default session progress:', error);
 
     // Handle case where session doesn't exist
