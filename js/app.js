@@ -391,23 +391,60 @@ class BingoApp {
     }
 
     async updateSessionProgress() {
-        if (!this.gameId || !this.sessionId) return;
+        if (!this.sessionId) return;
 
         try {
             const completedCells = this.bingoGrid.getCompletedCells();
-            const isCompleted = this.bingoGrid.bingoLines.length > 0; // Or some other completion criteria
+            const isCompleted = this.bingoGrid.bingoLines.length > 0;
 
-            await fetch(`${(await getConfig()).API_BASE_URL}/games/${this.gameId}/progress`, {
+            if (this.gameId) {
+                // Custom game progress
+                await fetch(`${(await getConfig()).API_BASE_URL}/games/${this.gameId}/progress`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: this.sessionId,
+                        progressJson: completedCells,
+                        isCompleted
+                    })
+                });
+            } else {
+                // Default game progress
+                await this.updateDefaultGameProgress(completedCells, isCompleted);
+            }
+        } catch (error) {
+            console.error('Failed to update progress:', error);
+        }
+    }
+
+    async updateDefaultGameProgress(completedCells, isCompleted) {
+        try {
+            const config = await getConfig();
+            const response = await fetch(`${config.API_BASE_URL}/default-sessions/${this.sessionId}/progress`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    sessionId: this.sessionId,
                     progressJson: completedCells,
                     isCompleted
                 })
             });
+
+            if (response.ok) {
+                console.log('Updated default game progress');
+
+                // Track completion in Google Analytics
+                if (isCompleted && typeof gtag !== 'undefined') {
+                    gtag('event', 'default_game_completed', {
+                        'event_category': 'engagement',
+                        'event_label': 'default_bingo',
+                        'value': completedCells.length
+                    });
+                }
+            } else {
+                console.error('Failed to update default progress:', response.status);
+            }
         } catch (error) {
-            console.error('Failed to update progress:', error);
+            console.error('Error updating default progress:', error);
         }
     }
 
@@ -428,9 +465,12 @@ class BingoApp {
 
         // Track photo taken event in Google Analytics
         if (typeof gtag !== 'undefined') {
-            gtag('event', 'photo_taken', {
+            const eventLabel = this.gameId ? `custom_cell_${cellIndex}` : `default_cell_${cellIndex}`;
+            const eventName = this.gameId ? 'photo_taken' : 'default_cell_completed';
+
+            gtag('event', eventName, {
                 'event_category': 'engagement',
-                'event_label': `cell_${cellIndex}`,
+                'event_label': eventLabel,
                 'value': 1
             });
         }
