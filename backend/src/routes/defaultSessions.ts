@@ -89,4 +89,4 @@ router.get('/:sessionId', async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;
