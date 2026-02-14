@@ -4,6 +4,7 @@
 :root {
     /* String Branding Colors */
     --primary-color: #75F8CC;
+    --primary-color-hover: #5ED4B0;
     --secondary-color: #C0F4FB;
     --background-color: #33373B;
     --text-primary: #FFFFFF;
@@ -334,7 +335,7 @@ html {
 }
 
 .btn-primary:hover {
-    background: #5ED4B0;
+    background: var(--primary-color-hover);
     transform: translateY(-1px);
     box-shadow: var(--shadow-medium);
 }
@@ -475,8 +476,8 @@ html {
     text-decoration: underline;
 }
 
-/* Re-centre Button */
-.btn-recentre {
+/* Recenter Button */
+.btn-recenter {
     position: fixed;
     bottom: 20px;
     right: 20px;
@@ -495,23 +496,17 @@ html {
     z-index: 100;
 }
 
-.btn-recentre:hover {
-    background: #5ED4B0;
-    transform: scale(1.1);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-}
-
-.btn-recentre:active {
+.btn-recenter:active {
     transform: scale(0.95);
 }
 
-.btn-recentre svg {
+.btn-recenter svg {
     pointer-events: none;
 }
 
-/* Show re-centre button only on touch devices */
+/* Show recenter button only on touch devices */
 @media (hover: none) and (pointer: coarse) {
-    .btn-recentre {
+    .btn-recenter {
         display: flex;
     }
 }
