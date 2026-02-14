@@ -475,6 +475,47 @@ html {
     text-decoration: underline;
 }
 
+/* Re-centre Button */
+.btn-recentre {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: var(--text-dark);
+    border: none;
+    box-shadow: var(--shadow-heavy);
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+    z-index: 100;
+}
+
+.btn-recentre:hover {
+    background: #5ED4B0;
+    transform: scale(1.1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.btn-recentre:active {
+    transform: scale(0.95);
+}
+
+.btn-recentre svg {
+    pointer-events: none;
+}
+
+/* Show re-centre button only on touch devices */
+@media (hover: none) and (pointer: coarse) {
+    .btn-recentre {
+        display: flex;
+    }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     body {

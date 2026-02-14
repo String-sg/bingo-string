@@ -97,6 +97,13 @@ export class TouchManager {
         this.grid.style.transform = `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`;
     }
 
+    recentre() {
+        this.scale = 1;
+        this.translateX = 0;
+        this.translateY = 0;
+        this.updateTransform();
+    }
+
     reset() {
         this.scale = 1;
         this.translateX = 0;
