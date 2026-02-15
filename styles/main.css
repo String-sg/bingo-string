@@ -466,6 +466,14 @@ html {
     font-size: 0.9em;
 }
 
+.button-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
 .footer a {
     color: #75F8CC;
     text-decoration: none;
@@ -526,6 +534,20 @@ html {
         padding: 12px 16px;
         margin: 5px;
         font-size: 0.9em;
+    }
+
+    .button-row {
+        flex-wrap: nowrap;
+        gap: 5px;
+        margin: 0 -10px 20px -10px;
+    }
+
+    .button-row .btn {
+        flex: 1;
+        margin: 0;
+        padding: 12px 8px;
+        font-size: 0.85em;
+        min-width: 0;
     }
 }
 
