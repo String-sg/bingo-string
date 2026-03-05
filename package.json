@@ -7,6 +7,9 @@
         "dev": "vite",
         "build": "vite build",
         "deploy": "npm run build && gh-pages -d dist",
+        "test": "playwright test",
+        "test:ui": "playwright test --ui",
+        "test:headed": "playwright test --headed",
         "postinstall": "prisma generate --schema=./backend/prisma/schema.prisma"
     },
     "keywords": [
