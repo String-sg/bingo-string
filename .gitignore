@@ -86,4 +86,9 @@ jspm_packages/
 .dynamodb/
 
 # TernJS port file
-.tern-port 
+.tern-port
+
+# Playwright test results
+test-results/
+playwright-report/
+playwright/.cache/ 

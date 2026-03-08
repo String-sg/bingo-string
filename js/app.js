@@ -182,6 +182,12 @@ class BingoApp {
             resetBtn.addEventListener('click', () => this.reset());
         }
 
+        // Recenter button
+        const recenterBtn = document.getElementById('recenterBtn');
+        if (recenterBtn) {
+            recenterBtn.addEventListener('click', () => this.recenter());
+        }
+
         // Download all images button
         const downloadBtn = document.getElementById('downloadBtn');
         if (downloadBtn) {
@@ -574,6 +580,13 @@ class BingoApp {
             cell.style.backgroundImage = '';
             cell.classList.remove('has-image');
         });
+    }
+
+    recenter() {
+        // Recenter the grid view
+        if (this.touchManager) {
+            this.touchManager.recenter();
+        }
     }
 
     showError(message) {

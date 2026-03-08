@@ -4,6 +4,7 @@
 :root {
     /* String Branding Colors */
     --primary-color: #75F8CC;
+    --primary-color-hover: #5ED4B0;
     --secondary-color: #C0F4FB;
     --background-color: #33373B;
     --text-primary: #FFFFFF;
@@ -334,7 +335,7 @@ html {
 }
 
 .btn-primary:hover {
-    background: #5ED4B0;
+    background: var(--primary-color-hover);
     transform: translateY(-1px);
     box-shadow: var(--shadow-medium);
 }
@@ -473,6 +474,41 @@ html {
 
 .footer a:hover {
     text-decoration: underline;
+}
+
+/* Recenter Button */
+.btn-recenter {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: var(--text-dark);
+    border: none;
+    box-shadow: var(--shadow-heavy);
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+    z-index: 100;
+}
+
+.btn-recenter:active {
+    transform: scale(0.95);
+}
+
+.btn-recenter svg {
+    pointer-events: none;
+}
+
+/* Show recenter button only on touch devices */
+@media (hover: none) and (pointer: coarse) {
+    .btn-recenter {
+        display: flex;
+    }
 }
 
 /* Responsive Design */

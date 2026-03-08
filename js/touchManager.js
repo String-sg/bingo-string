@@ -97,10 +97,17 @@ export class TouchManager {
         this.grid.style.transform = `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`;
     }
 
-    reset() {
+    recenter() {
+        // Reset to original centered position
         this.scale = 1;
         this.translateX = 0;
         this.translateY = 0;
         this.updateTransform();
+    }
+
+    reset() {
+        // Reset is currently an alias for recenter
+        // Kept separate to maintain API compatibility with existing callers
+        this.recenter();
     }
 } 
