@@ -1,0 +1,230 @@
+/* Host creation and persistent navigation */
+[hidden] {
+  display: none !important;
+}
+.host-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: #fff;
+  border-bottom: 1px solid #deded7;
+  flex-wrap: wrap;
+}
+.host-header nav {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.brand {
+  font-size: 1.2rem;
+  font-weight: 750;
+  color: #173b31;
+  text-decoration: none;
+}
+.host-page {
+  background: #f6f7f2;
+  color: #20352d;
+}
+.host-shell {
+  max-width: 900px;
+  margin: 2.5rem auto;
+  padding: 0 1.25rem 3rem;
+  line-height: 1.6;
+}
+.host-shell h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  margin: 0.4rem 0;
+}
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #38634d;
+}
+.steps {
+  list-style: none;
+  display: flex;
+  gap: 0.75rem;
+  padding: 0;
+  margin: 2rem 0;
+  counter-reset: step;
+  flex-wrap: wrap;
+}
+.steps li {
+  padding: 0.6rem 1rem;
+  border-bottom: 3px solid #d2d8cf;
+  color: #55685b;
+}
+.steps li[aria-current] {
+  border-color: #17604a;
+  font-weight: 700;
+  color: #174b38;
+}
+.host-shell section {
+  background: #fff;
+  padding: clamp(1rem, 3vw, 2rem);
+  border: 1px solid #d8ded5;
+  border-radius: 16px;
+}
+.host-shell label {
+  display: block;
+  font-weight: 600;
+  margin: 0.8rem 0;
+}
+.host-shell input:not([type="radio"]),
+.host-shell textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 1rem;
+  margin: 0.4rem 0;
+  padding: 0.8rem;
+  border: 1px solid #9eaea0;
+  border-radius: 8px;
+  background: #fff;
+  color: #20352d;
+}
+.host-shell fieldset {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #bbc7b9;
+  border-radius: 8px;
+}
+.prompt-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.2rem 1.25rem;
+}
+.host-toolbar,
+.host-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 1.25rem 0;
+}
+.host-toolbar input[type="file"] {
+  max-width: 100%;
+}
+.host-error {
+  color: #a12828;
+  min-height: 1.5em;
+}
+[aria-invalid="true"] {
+  border: 2px solid #a12828 !important;
+}
+.board-preview {
+  display: grid;
+  gap: 0.4rem;
+  margin: 1rem 0;
+}
+.board-preview div {
+  border: 1px solid #ccd5c8;
+  background: #f2f6ee;
+  padding: 0.7rem;
+  min-height: 5rem;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+  border-radius: 6px;
+}
+.host-dialog {
+  width: min(92vw, 620px);
+  max-height: 85vh;
+  overflow: auto;
+  padding: 2rem;
+  border: 1px solid #a6b4a4;
+  border-radius: 16px;
+  color: #20352d;
+}
+.host-dialog::backdrop {
+  background: rgb(14 32 24 / 0.55);
+}
+.host-dialog .btn {
+  margin: 0.5rem 0.5rem 0.5rem 0;
+}
+.host-dialog input {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+.host-dialog table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.host-dialog td,
+.host-dialog th {
+  padding: 0.6rem;
+  border-bottom: 1px solid #ddd;
+  overflow-wrap: anywhere;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #206d55;
+  outline-offset: 3px;
+}
+button.bingo-cell {
+  font: inherit;
+  color: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+.close {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+@media (max-width: 600px) {
+  .prompt-list {
+    grid-template-columns: 1fr;
+  }
+  .host-header {
+    padding: 1rem;
+  }
+  .host-shell {
+    margin-top: 1.5rem;
+  }
+  .host-actions .btn {
+    flex: 1 1 auto;
+  }
+  .board-preview div {
+    padding: 0.35rem;
+    font-size: 0.75rem;
+    min-height: 4rem;
+  }
+}
+
+.btn-outline {
+  color: #174b38;
+  background: #fff;
+  border-color: #267257;
+}
+.btn-outline:hover {
+  color: #174b38;
+  background: #edf8ef;
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+.steps li {
+  padding: 0.6rem 0.35rem;
+  font-size: 0.85rem;
+  text-align: center;
+}
+#hostIdentity {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+}

@@ -28,7 +28,7 @@ const corsOptions = {
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(Object.assign(new Error('Not allowed by CORS'), { status: 403 }));
     }
   },
   credentials: true,
@@ -66,9 +66,10 @@ app.use('*', (req, res) => {
 
 // Global error handler
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({
-    error: 'Internal server error',
+  const status = (err as Error & { status?: number }).status === 403 ? 403 : 500;
+  if (status === 500) console.error('Unhandled error:', err.message);
+  res.status(status).json({
+    error: status === 403 ? 'Untrusted origin' : 'Internal server error',
     ...(process.env.NODE_ENV === 'development' && { details: err.message })
   });
 });

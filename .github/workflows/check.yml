@@ -1,0 +1,40 @@
+name: Check host and guest journeys
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: e2e
+          POSTGRES_PASSWORD: e2e
+          POSTGRES_DB: bingo_e2e
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://e2e:e2e@127.0.0.1:5432/bingo_e2e
+      BINGO_TEST_DATABASE_URL: postgresql://e2e:e2e@127.0.0.1:5432/bingo_e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx prisma migrate deploy --schema backend/prisma/schema.prisma
+      - run: npm run build
+      - run: npm run check:backend
+      - run: npm run check:startup
+      - run: npm run test:backend
+      - run: npx playwright install --with-deps chromium
+      - run: npm test -- --workers=2 --reporter=line

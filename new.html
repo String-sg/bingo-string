@@ -1,90 +1,135 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create New Game - String Bingo</title>
-    <meta name="description" content="Create your own custom bingo game with String.">
-    <link rel="stylesheet" href="/styles/main.css">
-
-
-    <!-- Google Identity Services -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-</head>
-
-<body class="game-creation-body">
-    <!-- Form Header -->
-    <div class="form-header">
-        <a href="/" class="btn btn-outline back-btn" id="backToDashboardBtn">← Back</a>
-        <h1>Create New Game</h1>
-        <p class="form-subtitle">Set up your bingo game</p>
-    </div>
-
-    <!-- Form Content -->
-    <div class="form-content">
-        <!-- Game Details Section -->
-        <div class="form-section">
-            <h2>Game Details</h2>
-            <p class="section-subtitle">Give your game a name</p>
-
-            <div class="form-group">
-                <label for="gameName">Game Name</label>
-                <input type="text" id="gameName" placeholder="e.g., Teacher Icebreaker Bingo" maxlength="100">
-            </div>
-
-            <div class="form-group">
-                <label>Grid Size</label>
-                <div class="grid-size-options">
-                    <label class="radio-label">
-                        <input type="radio" name="gridSize" value="5" checked>
-                        5x5 (25 Questions)
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="gridSize" value="3">
-                        3x3 (9 Questions)
-                    </label>
-                </div>
-            </div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Host a game · String Bingo</title>
+    <link rel="stylesheet" href="/styles/main.css" />
+    <link rel="stylesheet" href="/styles/host.css" />
+  </head>
+  <body class="host-page">
+    <header class="host-header">
+      <a href="/" class="brand">String Bingo</a>
+      <nav aria-label="Host navigation">
+        <button id="myGamesBtn" type="button" class="btn btn-outline" hidden>
+          My games</button
+        ><span id="hostIdentity" hidden
+          ><span id="hostName"></span>
+          <button type="button" id="stringLogoutBtn" class="btn btn-outline">
+            Sign out of String ID
+          </button></span
+        >
+      </nav>
+    </header>
+    <main class="host-shell">
+      <p class="eyebrow">A board for your people</p>
+      <h1>Host your first game</h1>
+      <p>
+        Create a bingo board, then share one link. Players join without an
+        account.
+      </p>
+      <p id="authGate" role="status">Checking your String ID…</p>
+      <button id="editorSignIn" type="button" class="btn btn-primary" hidden>
+        Continue with String ID
+      </button>
+      <div id="wizard" hidden>
+        <ol id="stepList" class="steps" aria-label="Creation progress">
+          <li aria-current="step">1. Set up</li>
+          <li>2. Challenges</li>
+          <li>3. Review</li>
+        </ol>
+        <section data-step="0" aria-labelledby="setupTitle">
+          <h2 id="setupTitle" tabindex="-1">Set up your game</h2>
+          <label for="gameName">Game name</label
+          ><input
+            id="gameName"
+            maxlength="100"
+            placeholder="e.g. Team icebreaker"
+            autocomplete="off"
+          />
+          <fieldset>
+            <legend>Board size</legend>
+            <label
+              ><input type="radio" name="gridSize" value="3" checked /> 3 × 3 —
+              9 challenges, quick to start</label
+            ><label
+              ><input type="radio" name="gridSize" value="5" /> 5 × 5 — 24
+              challenges and a FREE centre</label
+            >
+          </fieldset>
+          <p>Your extra prompts stay in the draft when you switch sizes.</p>
+        </section>
+        <section data-step="1" hidden aria-labelledby="challengesTitle">
+          <h2 id="challengesTitle" tabindex="-1">Add your challenges</h2>
+          <p id="promptCount" aria-live="polite"></p>
+          <div class="host-toolbar">
+            <button id="starterBtn" type="button" class="btn btn-outline">
+              Fill blanks with starter prompts</button
+            ><label class="btn btn-outline" for="csvFile">Import CSV</label
+            ><input type="file" id="csvFile" accept=".csv,text/csv" /><a
+              href="/sample.csv"
+              download
+              >Example CSV</a
+            >
+          </div>
+          <p>
+            Use short actions that encourage people to talk. Import a “text” or
+            “challenge” column; quoted commas are supported.
+          </p>
+          <div id="promptList" class="prompt-list"></div>
+        </section>
+        <section data-step="2" hidden aria-labelledby="reviewTitle">
+          <h2 id="reviewTitle" tabindex="-1">Review before sharing</h2>
+          <h3 id="reviewName"></h3>
+          <p id="reviewSummary"></p>
+          <div
+            id="boardPreview"
+            class="board-preview"
+            aria-label="Board preview"
+          ></div>
+          <p>
+            Anyone with the link can join and play without signing in. Only you
+            can manage the game and see its results.
+          </p>
+        </section>
+        <p id="formError" class="host-error" role="alert" tabindex="-1"></p>
+        <div class="host-actions">
+          <button id="previousBtn" type="button" class="btn btn-outline">
+            Back</button
+          ><button id="nextBtn" type="button" class="btn btn-primary">
+            Continue</button
+          ><button
+            id="createGameBtn"
+            type="button"
+            class="btn btn-primary"
+            hidden
+          >
+            Create game
+          </button>
         </div>
-
-        <!-- Questions Section -->
-        <div class="form-section">
-            <h2>Questions</h2>
-            <p class="section-subtitle">Add your bingo questions (25 total, center is FREE)</p>
-
-            <div class="questions-toolbar">
-                <button class="btn btn-outline" id="editQuestionsBtn">
-                    <span class="btn-icon">📝</span>
-                    Edit
-                </button>
-                <button class="btn btn-outline" id="importCsvBtn">
-                    <span class="btn-icon">📄</span>
-                    CSV
-                </button>
-                <a href="/sample.csv" download class="btn btn-outline"
-                    style="text-decoration: none; display: inline-flex; align-items: center;">
-                    <span class="btn-icon">⬇️</span>
-                    Sample
-                </a>
-            </div>
-
-            <div class="bingo-editor-grid" id="bingoEditorGrid">
-                <!-- 5x5 grid will be generated by JavaScript -->
-            </div>
+        <p class="draft-note" id="draftNote" role="status">
+          Draft saved in this browser tab.
+        </p>
+      </div>
+      <section id="shareReady" hidden aria-labelledby="readyTitle">
+        <p class="eyebrow">Ready when you are</p>
+        <h2 id="readyTitle" tabindex="-1">Your game is ready</h2>
+        <p>
+          Copy this link and send it to your players. They do not need an
+          account.
+        </p>
+        <label for="shareLink">Game link</label
+        ><input id="shareLink" readonly />
+        <div class="host-actions">
+          <button id="copyLinkBtn" type="button" class="btn btn-primary">
+            Copy link</button
+          ><a id="previewGameLink" class="btn btn-outline">Preview board</a
+          ><a href="/?host=1" class="btn btn-outline">Go to my games</a>
         </div>
-    </div>
-
-    <!-- Form Footer -->
-    <div class="form-footer">
-        <a href="/" class="btn btn-secondary" id="cancelGameBtn">Cancel</a>
-        <button class="btn btn-primary" id="createGameBtn">Create Game</button>
-    </div>
-
-    <!-- Status Messages -->
-    <div class="status" id="status"></div>
-
+        <p id="shareStatus" role="status"></p>
+      </section>
+      <div id="status" class="status" role="alert"></div>
+    </main>
     <script type="module" src="/js/game-creation.js"></script>
-</body>
-
+  </body>
 </html>

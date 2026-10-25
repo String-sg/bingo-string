@@ -17,7 +17,7 @@ export default defineConfig({
     server: {
         proxy: {
             '/api': {
-                target: 'http://localhost:3000',
+                target: process.env.BINGO_DEV_API_TARGET || 'http://localhost:3000',
                 changeOrigin: true,
                 secure: false
             }

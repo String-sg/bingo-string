@@ -5,6 +5,18 @@ export class ModalManager {
         this.currentImageData = null;
 
         this.initModals();
+        document.addEventListener('keydown', event => {
+            const modal = [...document.querySelectorAll('.modal[aria-modal="true"]')].reverse().find(el => el.style.display === 'block');
+            if (!modal) return;
+            if (event.key === 'Escape') { event.preventDefault(); if(modal.dataset.dynamic) modal.remove(); this.closeModal(); }
+            if (event.key === 'Tab') {
+                const controls = [...modal.querySelectorAll('button:not([disabled]), input:not([type=hidden]), a[href], [tabindex="0"]')].filter(el => el.offsetParent !== null);
+                if(!controls.length) {event.preventDefault();modal.focus();return;}
+                const first=controls[0],last=controls[controls.length-1];
+                if(event.shiftKey && (document.activeElement===first || document.activeElement===modal)){event.preventDefault();last.focus();}
+                else if(!event.shiftKey && (document.activeElement===last || !modal.contains(document.activeElement))){event.preventDefault();first.focus();}
+            }
+        });
     }
 
     initModals() {
@@ -32,8 +44,16 @@ export class ModalManager {
     showModal(modalId) {
         const modal = document.getElementById(modalId);
         if (modal) {
+            this.previousFocus = document.activeElement;
             modal.style.display = 'block';
+            this.prepareDialog(modal);
         }
+    }
+
+    prepareDialog(modal) {
+        modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true'); modal.tabIndex=-1;
+        const heading=modal.querySelector('h2');if(heading){heading.id ||= `${modal.id || 'player'}-title`;modal.setAttribute('aria-labelledby',heading.id);}
+        (modal.querySelector('input,button') || modal).focus();
     }
 
     closeModal() {
@@ -42,9 +62,10 @@ export class ModalManager {
         });
 
         // Stop camera when closing camera modal
-        if (this.cameraModal.style.display === 'none') {
+        if (this.cameraModal?.style.display === 'none') {
             this.cameraManager.stopCamera();
         }
+        this.previousFocus?.focus();
     }
 
     showOptionsModal(cellIndex) {
@@ -161,12 +182,14 @@ export class ModalManager {
             <div class="modal-content">
                 <h2>Welcome!</h2>
                 <p>Please enter your name to join the game:</p>
-                <input type="text" id="playerNameInput" placeholder="Your Name" style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px;">
+                <label for="playerNameInput">Your name</label><input type="text" maxlength="80" id="playerNameInput" placeholder="Your Name" style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px;">
                 <button class="btn btn-primary" id="joinGameBtn" style="width: 100%;">Join Game</button>
             </div>
         `;
 
+        modal.dataset.dynamic='true';
         document.body.appendChild(modal);
+        this.previousFocus=document.activeElement;this.prepareDialog(modal);
 
         const input = modal.querySelector('#playerNameInput');
         const btn = modal.querySelector('#joinGameBtn');

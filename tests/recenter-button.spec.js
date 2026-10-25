@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Recenter Button', () => {
   test.describe('Desktop (non-touch devices)', () => {
+    test.use({ hasTouch: false, isMobile: false, viewport: { width: 1280, height: 720 } });
     test('should not display recenter button on desktop', async ({ page }) => {
       await page.goto('/');
       
