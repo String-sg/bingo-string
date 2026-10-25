@@ -3,7 +3,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -13,10 +12,11 @@ datasource db {
 
 model User {
   id        String   @id @default(cuid())
-  email     String   @unique
+  email     String?  @unique
   name      String
   picture   String?
-  googleId  String   @unique @map("google_id")
+  googleId  String?  @unique @map("google_id")
+  stringMemberId String? @unique @map("string_member_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -29,7 +29,9 @@ model User {
 model Game {
   id             String   @id @default(cuid())
   name           String
-  creatorEmail   String   @map("creator_email")
+  creatorEmail   String?  @map("creator_email")
+  creatorId      String   @map("creator_id")
+  clientCreateKey String? @unique @map("client_create_key")
   challengesJson Json     @map("challenges_json")
   gridSize       Int      @default(5) @map("grid_size")
   isPublic       Boolean  @default(true) @map("is_public")
@@ -37,7 +39,7 @@ model Game {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   // Relations
-  creator      User          @relation(fields: [creatorEmail], references: [email])
+  creator      User          @relation(fields: [creatorId], references: [id])
   gameSessions GameSession[]
 
   @@map("games")
@@ -73,4 +75,12 @@ model DefaultGameSession {
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
   @@map("default_game_sessions")
+}
+model IdentityLinkAudit {
+  id String @id @default(cuid())
+  userId String @map("user_id")
+  stringMemberId String @map("string_member_id")
+  method String
+  createdAt DateTime @default(now()) @map("created_at")
+  @@map("identity_link_audit")
 }

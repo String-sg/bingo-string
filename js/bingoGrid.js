@@ -15,6 +15,7 @@ export class BingoGrid {
         this.container.innerHTML = '';
         this.cells = [];
         this.gridSize = gridSize;
+        this.challenges = challenges;
 
         // Set CSS grid columns based on grid size
         this.container.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
@@ -29,10 +30,13 @@ export class BingoGrid {
             this.container.appendChild(cell);
             this.cells.push(cell);
         }
+        if (gridSize === 5) this.setCellCompleted(12);
     }
 
     createCell(index, challenge) {
-        const cell = document.createElement('div');
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.setAttribute('aria-pressed', 'false');
         cell.className = 'bingo-cell';
         cell.dataset.index = index;
 
@@ -40,13 +44,15 @@ export class BingoGrid {
         const centerIndex = this.gridSize === 5 ? 12 : -1;
         if (index === centerIndex) {
             cell.classList.add('center-cell');
+            cell.disabled = true;
+            cell.setAttribute('aria-label', 'FREE centre');
         }
 
-        const number = document.createElement('div');
+        const number = document.createElement('span');
         number.className = 'cell-number';
         number.textContent = index + 1;
 
-        const text = document.createElement('div');
+        const text = document.createElement('span');
         text.className = 'cell-text';
         text.textContent = challenge ? challenge.text : 'Free Space';
 
@@ -59,6 +65,7 @@ export class BingoGrid {
     setCellCompleted(index) {
         if (index >= 0 && index < this.cells.length) {
             this.cells[index].classList.add('completed');
+            this.cells[index].setAttribute('aria-pressed', 'true');
             this.completedCells.add(index);
             this.checkForBingo();
         }
@@ -67,6 +74,7 @@ export class BingoGrid {
     setCellIncomplete(index) {
         if (index >= 0 && index < this.cells.length) {
             this.cells[index].classList.remove('completed');
+            this.cells[index].setAttribute('aria-pressed', 'false');
             this.cells[index].style.backgroundImage = '';
             this.completedCells.delete(index);
             this.removeBingoHighlight();
@@ -150,6 +158,8 @@ export class BingoGrid {
 
         for (const cell of this.cells) {
             cell.classList.remove('completed', 'bingo-line');
+            cell.setAttribute('aria-pressed', 'false');
         }
+        if (this.gridSize === 5) this.setCellCompleted(12);
     }
 } 

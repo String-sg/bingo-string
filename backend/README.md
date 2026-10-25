@@ -1,115 +1,89 @@
-# Bingo Backend API
+# Bingo API and String ID hosting
 
-Express.js backend for the String Bingo application with PostgreSQL/NeonDB and Prisma ORM.
+Bingo serves vanilla JS/Vite and Express/Prisma from the same HTTPS origin.
+All String ID members may host; guests play public games without signing in.
+The host workspace is **My games**. Site-wide admin reporting is not part of this release.
 
-## Setup
+## Local setup
 
-### 1. Install Dependencies
-```bash
-cd backend
-npm install
-```
+Use Node 22.12+ in the Node 22 line. From the repository root:
 
-### 2. Environment Variables
-Copy `.env.example` to `.env` and configure:
-```env
-DATABASE_URL="your_neondb_connection_string"
-GOOGLE_CLIENT_ID="your_google_oauth_client_id"
-PORT=3000
-NODE_ENV=development
-CORS_ORIGINS="http://localhost:5173,https://string.sg"
-```
-
-### 3. Database Setup
-```bash
-# Generate Prisma client
-npm run prisma:generate
-
-# Run database migrations
-npm run prisma:migrate
-
-# (Optional) Open Prisma Studio
-npm run prisma:studio
-```
-
-### 4. Development
-```bash
-# Start development server with hot reload
+```sh
+npm ci
+# Set DATABASE_URL to a development database, never production for tests.
+npx prisma migrate deploy --schema backend/prisma/schema.prisma
 npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
+# Separate terminal: BINGO_APP_ORIGIN=http://localhost:5173 PORT=3000 npx tsx backend/src/index.ts
 ```
 
-## API Endpoints
+Prisma generation uses its default location. Install from the root for Vercel;
+`npm run check:startup` proves the exported API can load without a database query.
 
-### Authentication
-- `POST /api/auth/login` - Login with Google token
-- `GET /api/auth/me` - Get current user info
-- `POST /api/auth/logout` - Logout (analytics)
+## Authentication contract
 
-### Games
-- `GET /api/games` - Get user's games (auth required)
-- `POST /api/games` - Create new game (auth required)
-- `GET /api/games/:id` - Get specific game (public or owner)
-- `PUT /api/games/:id` - Update game (owner only)
-- `DELETE /api/games/:id` - Delete game (owner only)
-- `GET /api/games/:id/play` - Get game for playing (public)
+Bingo links to `https://id.string.sg/login?continue=bingo`. The backend validates
+only the `string_session` cookie by calling fixed `https://id.string.sg/api/me`.
+It returns a minimal identity to the browser; provider tokens, Google subjects and
+private String ID profile fields are never copied into browser storage.
+401 means signed out; 503 means identity service unavailable. A failed identity
+lookup never becomes an empty game list. Host mutations require the exact
+`BINGO_APP_ORIGIN` Origin (production default `https://bingo.string.sg`).
 
-### Sessions and Results
-- `POST /api/games/:id/join` - Join a custom game with a session ID and player name
-- `POST /api/games/:id/progress` - Update custom game progress
-- `GET /api/games/:id/results` - Get custom game results (authenticated owner only)
-- `POST /api/default-sessions` - Create an anonymous default session, or return the existing session
-- `POST /api/default-sessions/:sessionId/progress` - Replace default session progress and completion state
-- `GET /api/default-sessions/:sessionId` - Get a default session
+- `GET /api/auth/me`: validated local host projection.
+- `POST /api/auth/logout`: guarded proxy to String ID; successful deletion cookie
+  is relayed. This signs out this browser across String apps, not every device.
+- `GET/POST /api/games`: list/create the signed-in user's games.
+- `GET/PUT/DELETE /api/games/:id`: public read or owner-only management.
+- `GET /api/games/:id/play`: public saved board including grid size.
+- `POST /api/games/:id/join` and `/progress`: public games only, bounded guest
+  name/UUID/cell indices; bingo is calculated server-side.
+- `GET /api/games/:id/results`: authenticated owner only.
+- Existing `/api/default-sessions` endpoints remain guest accessible.
 
-Default session endpoints do not require login. The session ID is used to retrieve
-or update a session; these endpoints are not an administrative analytics API.
+Creation accepts an optional UUID `createKey`; repeated requests from the same
+owner return the same game. The guided host editor uses this for retry safety.
+`BINGO_ADMIN_MEMBER_IDS` is an explicit comma-separated String member UUID allowlist;
+it never inherits String ID admin status and does not bypass owner-only routes.
 
-### Health Check
-- `GET /health` - Server health status
+## Existing games and release order
 
-## Database Schema
+1. Deploy String ID PR75 before enabling Bingo's sign-in link. String ID needs
+   `COOKIE_DOMAIN=.string.sg` and HTTPS. Google login is configured there.
+2. Back up and review migration `202610250001_stable_string_identity`; apply
+   `npx prisma migrate deploy --schema backend/prisma/schema.prisma` before deploying
+   new readers. It backfills creator IDs through the existing email relationship,
+   retains every user/game ID, and rolls back atomically if an owner is missing.
+   A compatibility insert trigger fills creator IDs for the previous release.
+3. Deploy Bingo. The same verified Google subject links a legacy host once, with
+   an audit record. Email changes never reassign ownership. Phone-only new members
+   can host. Email collisions without Google proof require an explicit review.
+4. For an approved manual match, run the dry-run first:
+   `npx tsx backend/scripts/link-member.ts USER_ID STRING_MEMBER_UUID`; verify
+   ownership evidence, then repeat with `--apply`. Conflicts fail without rebinding.
 
-### Users
-- `id` - Unique identifier
-- `email` - User email (unique)
-- `name` - Display name
-- `picture` - Profile picture URL
-- `googleId` - Google OAuth user ID
-- `createdAt`, `updatedAt` - Timestamps
+Rollback application code first; retain the additive columns, backfilled IDs,
+audit records and compatibility trigger. Do not drop new data during rollback.
+Production migrations/configuration/deployments require separate approval.
 
-### Games
-- `id` - Unique identifier
-- `name` - Game name
-- `creatorEmail` - Creator's email
-- `challengesJson` - Array of 25 challenges (JSON)
-- `isPublic` - Whether game is publicly accessible
-- `createdAt`, `updatedAt` - Timestamps
+## Verification
 
-### GameSessions
-- `id` - Unique identifier
-- `gameId` - Reference to game
-- `sessionId` - Client-generated identifier (unique together with `gameId`)
-- `playerName` - Player-provided display name
-- `progressJson` - Game progress data (JSON)
-- `isCompleted` - Whether the player has achieved bingo
-- `completedAt` - Completion timestamp
-- `createdAt`, `updatedAt` - Timestamps
+Use an isolated local database. Backend tests clear only test data and refuse
+remote database hosts. Browser tests use real Bingo HTTP and database operations,
+with only String ID mocked.
 
-### DefaultGameSessions
-- `id` - Unique identifier
-- `sessionId` - Unique client-generated identifier
-- `challengeSet` - Challenge CSV filename
-- `gridSize` - Reported grid side length
-- `progressJson` - Latest completed cell indices (JSON)
-- `isCompleted` - Whether the player has achieved bingo
-- `completedAt` - Completion timestamp
-- `createdAt`, `updatedAt` - Timestamps
+```sh
+npm run build
+npm run check:backend
+npm run check:startup
+DATABASE_URL=postgresql://e2e@127.0.0.1:55475/bingo_e2e npm run test:backend
+BINGO_TEST_DATABASE_URL=postgresql://e2e@127.0.0.1:55475/bingo_e2e npm test
+```
+
+Photos now use per-game, per-player local storage keys. Legacy unscoped
+`bingoCellImages` data is retained but not automatically attributed to another
+game. Browser drafts use versioned session storage and clear only after creation.
+The old GitHub Pages workflow cannot serve this authenticated backend; Vercel's
+same-origin API is the release target. CI verifies the API and user journeys.
 
 ## Analytics Review and Proposed Scope (#56)
 
@@ -211,26 +185,3 @@ free text, or raw session IDs to GA or aggregate reports.
 Treat Phase 1 as present but blocked, and split its repair and Phases 2–3 into
 these follow-ups rather than closing them as delivered. This review changes
 documentation only; it does not fix the measurement gaps or add telemetry.
-
-## Security Features
-
-- Google OAuth JWT validation
-- CORS protection
-- Helmet security headers
-- Request rate limiting
-- Input validation
-- SQL injection protection (Prisma)
-
-## Deployment
-
-This backend can be deployed to:
-- Railway
-- Render
-- Vercel (serverless functions)
-- Heroku
-- Any Node.js hosting platform
-
-Make sure to:
-1. Set all environment variables
-2. Run database migrations
-3. Configure CORS origins for your frontend domain

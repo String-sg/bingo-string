@@ -11,11 +11,18 @@
 
 
 
-    <!-- Google Identity Services -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<link rel="stylesheet" href="/styles/host.css">
 </head>
 
 <body>
+    <header class="host-header">
+      <a href="/" class="brand">String Bingo</a>
+      <nav aria-label="Host navigation"><button type="button" class="btn btn-outline" id="myGamesBtn" hidden>My games</button>
+      <button type="button" class="btn btn-primary" id="hostGameBtn">Host a game</button>
+      <span id="hostIdentity" hidden><span id="hostName"></span> <button type="button" class="btn btn-outline" id="stringLogoutBtn">Sign out of String ID</button></span></nav>
+    </header>
+
     <div class="grid-container">
         <div class="bingo-grid" id="bingoGrid">
             <!-- Grid will be populated by JavaScript -->
@@ -34,13 +41,8 @@
         <div class="button-row">
             <button class="btn btn-secondary" id="resetBtn">Reset</button>
             <button class="btn btn-primary" id="downloadBtn">Download Images</button>
-            <button class="btn btn-outline" id="authBtn">🎯 Make Your Own</button>
-            <button class="btn btn-outline" id="makeYourOwnBtn" style="display: none;">🎯 Make Your Own</button>
-        </div>
-        <div id="userInfo" style="display: none; margin: 10px 0;">
-            <img id="userAvatar" style="width: 32px; height: 32px; border-radius: 50%; margin-right: 8px;">
-            <span id="userName"></span>
-            <button class="btn btn-secondary" id="logoutBtn" style="margin-left: 10px;">Logout</button>
+
+
         </div>
         <hr style="border: none; border-top: 1px solid #333; margin: 20px 0; opacity: 0.3;">
         <p>Made with ❤️ by <a href="https://for.edu.sg/str-bingo-tree" target="_blank">String Team</a></p>
@@ -51,7 +53,7 @@
     <!-- Options Modal -->
     <div id="optionsModal" class="modal">
         <div class="modal-content">
-            <span class="close">&times;</span>
+            <button type="button" class="close" aria-label="Close dialog">&times;</button>
             <h2>Complete Challenge</h2>
             <button class="btn btn-primary" id="cameraBtn">📷 Take Photo</button>
             <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📁 Upload
@@ -63,7 +65,7 @@
     <!-- Camera Modal -->
     <div id="cameraModal" class="modal">
         <div class="modal-content">
-            <span class="close">&times;</span>
+            <button type="button" class="close" aria-label="Close dialog">&times;</button>
             <h2>Take Photo</h2>
             <div class="camera-container">
                 <video id="video" autoplay playsinline></video>
@@ -82,28 +84,18 @@
     <!-- Bingo Modal -->
     <div id="bingoModal" class="modal">
         <div class="modal-content">
-            <span class="close">&times;</span>
+            <button type="button" class="close" aria-label="Close dialog">&times;</button>
             <h2>🎉 BINGO! 🎉</h2>
             <p>Congratulations! You've completed a line!</p>
-            <p>You've successfully completed 5 challenges in a row!</p>
+            <p>You have completed a line of challenges.</p>
             <button class="btn btn-primary" id="celebrateBtn">🎊 Celebrate!</button>
         </div>
     </div>
 
-    <div id="authModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>🎯 Create Your Own Bingo</h2>
-            <p>Sign in with Google to create and manage your own custom bingo games</p>
-            <div id="googleSignInBtn" style="margin: 20px 0; text-align: center;"></div>
-            <p style="font-size: 0.9em; color: #666; margin-top: 20px;">
-                By signing in, you can create unlimited custom bingo games and share them with your teams.
-            </p>
-        </div>
-    </div>
-
-
     <div id="adminDashboard" class="admin-dashboard" style="display: none;">
+        <h1>My games</h1>
+        <p>Create a board and share it. Your players do not need an account.</p>
+        <div id="gamesState" aria-live="polite"></div>
         <div>
             <button class="btn btn-primary admin-create-btn" id="createNewGameBtn">
                 <span class="btn-icon">+</span>

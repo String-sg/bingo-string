@@ -1,9 +1,7 @@
-name: Deploy to GitHub Pages
+name: Legacy static export (manual only)
 
 on:
-  push:
-    branches: [main, staging]
-  workflow_dispatch: # Allow manual deployment
+  workflow_dispatch: # Legacy static export only; authenticated hosting is on Vercel.
 
 jobs:
   build-and-deploy:
@@ -25,7 +23,7 @@ jobs:
     - name: Build project
       run: npm run build
 
-    - name: Deploy to GitHub Pages
+    - name: Legacy static export (manual only)
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}

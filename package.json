@@ -10,7 +10,10 @@
         "test": "playwright test",
         "test:ui": "playwright test --ui",
         "test:headed": "playwright test --headed",
-        "postinstall": "prisma generate --schema=./backend/prisma/schema.prisma"
+        "postinstall": "prisma generate --schema=./backend/prisma/schema.prisma",
+        "test:backend": "tsx --test tests/backend/*.test.ts",
+        "check:backend": "tsc -p backend/tsconfig.json --noEmit",
+        "check:startup": "tsx -e \"process.env.VERCEL='1'; import('./api/index.ts').then(() => console.log('API imported'))\""
     },
     "keywords": [
         "bingo",
@@ -20,7 +23,7 @@
         "challenges"
     ],
     "engines": {
-        "node": "^18.0.0 || ^20.0.0 || ^22.0.0"
+        "node": "^22.12.0"
     },
     "author": "String Team",
     "license": "MIT",
@@ -30,7 +33,6 @@
         "cors": "^2.8.5",
         "dotenv": "^16.3.1",
         "express": "^4.18.2",
-        "google-auth-library": "^10.9.1",
         "helmet": "^7.1.0",
         "morgan": "^1.10.0",
         "tsx": "^4.6.2",
