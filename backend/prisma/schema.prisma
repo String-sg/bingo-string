@@ -84,3 +84,11 @@ model IdentityLinkAudit {
   createdAt DateTime @default(now()) @map("created_at")
   @@map("identity_link_audit")
 }
+
+model RateLimitBucket {
+  key String @id
+  hits Int
+  resetAt DateTime @map("reset_at") @db.Timestamptz(3)
+  @@index([resetAt])
+  @@map("rate_limit_buckets")
+}

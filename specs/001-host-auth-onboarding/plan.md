@@ -29,3 +29,7 @@ See [data-model.md](data-model.md), [contracts/auth.md](contracts/auth.md), [qui
 ## Complexity Tracking
 
 No new service/framework; changes are limited to approved identity and host/guest journeys.
+
+## Convergence addition: request limits
+
+CodeQL identified missing creation rate limiting. Reuse PostgreSQL through express-rate-limit with an atomic shared store, a separate additive counter-table migration, bounded expiry cleanup and no token/raw-IP storage. Add concurrency and HTTP 429 coverage; preserve guest play outside host limits.
