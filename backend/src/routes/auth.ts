@@ -1,4 +1,5 @@
 import express from "express";
+import { identityLimiter } from "../middleware/rate-limit";
 import {
   authenticateString,
   AuthenticatedRequest,
@@ -6,10 +7,10 @@ import {
   sessionCookie,
 } from "../middleware/auth";
 const router = express.Router();
-router.get("/me", authenticateString, (req: AuthenticatedRequest, res) =>
+router.get("/me", identityLimiter, authenticateString, (req: AuthenticatedRequest, res) =>
   res.set("Cache-Control", "no-store").json(req.user),
 );
-router.post("/logout", trustedOrigin, async (req, res) => {
+router.post("/logout", identityLimiter, trustedOrigin, async (req, res) => {
   const cookie = sessionCookie(req);
   if (!cookie) return res.status(401).json({ error: "No active session" });
   try {

@@ -6,6 +6,6 @@ Run `npm ci`, `npm run build`, backend typecheck and backend tests. Start the mo
 
 ## Evidence
 
-Node 22.23.4: frontend build, backend TypeScript and API cold-start checks passed. Six real-DB backend tests and all 38 desktop/mobile Playwright checks passed. Browser-to-API-to-DB checks include photo completion and owner result retrieval. Fresh Prisma migrate deploy passed on an isolated DB; legacy SQL fixture retained game/user IDs and accepted a previous-release insert through the compatibility trigger. Visual review caught and fixed outline-button contrast and mobile step wrapping.
+Node 22.23.4: frontend build, backend TypeScript and API cold-start checks passed. Eight real-DB backend tests and all 38 desktop/mobile Playwright checks passed. Browser-to-API-to-DB checks include photo completion and owner result retrieval. Fresh Prisma migrate deploy passed on an isolated DB; legacy SQL fixture retained game/user IDs and accepted a previous-release insert through the compatibility trigger. Shared request counters passed concurrent-instance and HTTP 429 checks; the additive limits migration also deployed successfully on the isolated DB. Visual review caught and fixed outline-button contrast and mobile step wrapping.
 
 All user stories and requirements were compared against code/tests; no implementation gaps remain. Production schema/configuration and a real String ID/MOE pilot remain release prerequisites.

@@ -47,3 +47,7 @@ Setup → stable data/auth foundations → user stories → verification. No sam
 ## Implementation Strategy
 
 Complete identity foundation first, then user-facing flow and failure cases; verify before draft PR. Independent documentation may be reviewed separately.
+
+## Phase 11: Convergence
+
+- [x] T011 [US1] Resolve CodeQL missing rate limiting with atomic shared PostgreSQL counters in backend/src/middleware/rate-limit.ts, additive request-limit migration, HTTP/instance concurrency tests and updated rollout docs.

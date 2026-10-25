@@ -66,10 +66,11 @@ app.use('*', (req, res) => {
 
 // Global error handler
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const status = (err as Error & { status?: number }).status === 403 ? 403 : 500;
+  const candidate = (err as Error & { status?: number }).status;
+  const status = candidate === 403 || candidate === 503 ? candidate : 500;
   if (status === 500) console.error('Unhandled error:', err.message);
   res.status(status).json({
-    error: status === 403 ? 'Untrusted origin' : 'Internal server error',
+    error: status === 403 ? 'Untrusted origin' : status === 503 ? 'Request service unavailable. Please retry.' : 'Internal server error',
     ...(process.env.NODE_ENV === 'development' && { details: err.message })
   });
 });

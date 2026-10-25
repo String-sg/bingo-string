@@ -185,3 +185,16 @@ free text, or raw session IDs to GA or aggregate reports.
 Treat Phase 1 as present but blocked, and split its repair and Phases 2–3 into
 these follow-ups rather than closing them as delivered. This review changes
 documentation only; it does not fix the measurement gaps or add telemetry.
+
+## Host request limits
+
+PostgreSQL-backed atomic counters enforce 30 creation requests/minute per
+client subnet/IP and 300 host-read/auth requests/minute. Guest play/join/progress
+use separate public routes and do not consume host limits. Vercel deployment
+headers supply the trusted client IP; other hosts use the socket address. Only
+SHA-256 network keys are stored, never raw IPs or session tokens. This remains
+pseudonymous request metadata, not an anonymity claim. Counters expire after a
+minute; expired rows older than a day are cleaned in bounded batches on later
+limited requests. A database/store outage fails closed with 503; blocked clients
+receive 429 plus Retry-After. Apply migration `202610250002_host_request_limits`
+before deploying the middleware.

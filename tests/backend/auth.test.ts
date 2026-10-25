@@ -35,6 +35,7 @@ before(async () => {
   server = app.listen(0, "127.0.0.1");
   await new Promise((r) => server.once("listening", r));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  await prisma.rateLimitBucket.deleteMany();
   await prisma.gameSession.deleteMany();
   await prisma.game.deleteMany();
   await prisma.identityLinkAudit.deleteMany();
@@ -271,4 +272,17 @@ test("duplicate creation key returns one game; malformed progress and private wr
     ).status,
     403,
   );
+});
+
+test('rate counters are atomic and shared across store instances',async()=>{
+ const {PostgresRateLimitStore}=await import('../../backend/src/middleware/rate-limit');
+ const a=new PostgresRateLimitStore('test-shared'),b=new PostgresRateLimitStore('test-shared');
+ const counts=await Promise.all(Array.from({length:20},(_,i)=>(i%2?a:b).increment('test-client')));
+ assert.deepEqual(counts.map(x=>x.totalHits).sort((x,y)=>x-y),Array.from({length:20},(_,i)=>i+1));
+ assert.ok(counts.every(x=>x.resetTime.getTime()>Date.now()));await a.resetKey('test-client');
+});
+test('game creation is rate limited and sends Retry-After',async()=>{
+ const {PostgresRateLimitStore}=await import('../../backend/src/middleware/rate-limit');const store=new PostgresRateLimitStore('create');await store.resetKey('127.0.0.1');
+ for(let i=0;i<30;i++) assert.equal((await fetch(base+'/api/games',{method:'POST',headers:headers(),body:'{}'})).status,400);
+ const blocked=await fetch(base+'/api/games',{method:'POST',headers:headers(),body:'{}'});assert.equal(blocked.status,429);assert.ok(Number(blocked.headers.get('retry-after'))>0);await store.resetKey('127.0.0.1');
 });
