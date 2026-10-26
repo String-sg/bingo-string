@@ -1,4 +1,4 @@
-/* String footer v1.0.0 — source: String-sg/string-brand-guide/components/string-footer */
+/* String footer v1.0.1 — source: String-sg/string-footer */
 .str-footer, .str-footer * { box-sizing: border-box; }
 .str-footer {
   width: 100%; margin: auto 0 0; padding: 0; border-top: 1px solid #53615d;
@@ -43,3 +43,13 @@
 .str-footer .str-footer__social svg { display: block; width: 20px; height: 20px; flex-shrink: 0; }
 .str-footer .str-footer__nav .str-footer__skills { flex-direction: column; align-items: flex-start; gap: 0; }
 .str-footer .str-footer__hint { color: #b8c3bf; font-size: 12px; }
+/* Compact tools keep contributor credit visible ahead of ecosystem branding. */
+.str-footer .str-footer__compact-inner { width: min(1120px, 100%); margin: 0 auto; padding: 20px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+.str-footer .str-footer__credits { margin: 0; color: #e1e6e4; font-size: 13px; line-height: 1.7; }
+.str-footer .str-footer__credits strong { color: #f5f7f6; font-weight: 600; }
+.str-footer .str-footer__credits a { color: #75f8cc; text-decoration: underline; }
+.str-footer .str-footer__compact-links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; font-size: 12px; }
+.str-footer .str-footer__compact-links a { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; gap: 4px; }
+.str-footer .str-footer__compact-links svg { width: 20px; height: 20px; }
+.str-footer .str-footer__credit-extra { width: min(1072px, calc(100% - 40px)); margin: 0 auto 20px; }
+@media (max-width: 640px) { .str-footer .str-footer__compact-inner { padding: 20px; } }

@@ -9,4 +9,4 @@ By @KOKHC @physicstjc - first developed on Claude
 
 ## Shared String footer
 
-The footer is vendored from [String-sg/string-brand-guide](https://github.com/String-sg/string-brand-guide/tree/main/components/string-footer). `string-footer.json` records its version and source digest. Update the shared source and use its sync script to regenerate this checkout; add `--check` to detect drift. See the upstream README for adoption and validation instructions. Product-specific controls and integration links remain outside the shared footer.
+The footer is vendored from [String-sg/string-footer](https://github.com/String-sg/string-footer). `string-footer.json` records its version and source digest. Update the shared source and use its sync script to regenerate this checkout; add `--check` to detect drift. See the upstream README for adoption and validation instructions. Product-specific controls and integration links remain outside the shared footer.
