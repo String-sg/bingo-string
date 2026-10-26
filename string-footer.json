@@ -1,0 +1,18 @@
+{
+  "version": "1.0.1",
+  "source": "https://github.com/String-sg/string-footer",
+  "sha256": "1a0ba7ef66dd8944d12cf9889db237c6f6f05b326d213ba0e51d83d88518aea1",
+  "product": "bingo",
+  "variant": "compact",
+  "credits": [
+    {
+      "label": "Made with ❤️ by",
+      "name": "String Team",
+      "url": "https://for.edu.sg/str-bingo-tree"
+    },
+    {
+      "label": "Inspired by",
+      "name": "Seng Kwang (Physics educator @ TJC)"
+    }
+  ]
+}
