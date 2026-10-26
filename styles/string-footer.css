@@ -7,7 +7,7 @@
   font-size: 14px; line-height: 1.6; text-align: left;
 }
 .str-footer .str-footer__inner { width: min(1120px, 100%); margin: 0 auto; padding: 40px 24px 20px; }
-.str-footer .str-footer__main { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px; }
+.str-footer .str-footer__main { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 32px; }
 .str-footer .str-footer__brand { display: inline-flex; padding: 0; }
 .str-footer .str-footer__brand img { display: block; width: 108px; height: 38px; max-width: 100%; }
 .str-footer .str-footer__identity p { margin: 16px 0 12px; color: #e1e6e4; font-size: 14px; line-height: 1.65; }
@@ -32,6 +32,8 @@
   .str-footer .str-footer__inner { padding: 32px 20px 20px; }
   .str-footer .str-footer__main { grid-template-columns: 1fr 1fr; gap: 28px 20px; }
   .str-footer .str-footer__identity { grid-column: 1 / -1; }
+  .str-footer .str-footer__social { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; gap: 2px 20px; }
+  .str-footer .str-footer__social h2 { flex-basis: 100%; }
   .str-footer .str-footer__bottom { margin-top: 24px; align-items: flex-start; flex-direction: column; gap: 8px; }
 }
 @media (forced-colors: active) { .str-footer a:focus-visible { outline-color: LinkText; } }
