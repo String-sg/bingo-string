@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../lib/prisma";
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest<Params = Request["params"]> extends Request<Params> {
   user?: {
     id: string;
     stringMemberId: string;
