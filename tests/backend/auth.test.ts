@@ -66,6 +66,15 @@ const headers = (token = a) => ({
   origin: "http://localhost:5173",
   "content-type": "application/json",
 });
+test("Express 5 preserves JSON 404s for root and nested unknown routes", async () => {
+  for (const path of ["/", "/api/unknown/nested"]) {
+    for (const method of ["GET", "POST"]) {
+      const res = await fetch(base + path, { method });
+      assert.equal(res.status, 404);
+      assert.deepEqual(await res.json(), { error: "Route not found" });
+    }
+  }
+});
 test("preserves legacy Google owner and logs deterministic identity link", async () => {
   const legacy = await prisma.user.create({
     data: {
@@ -285,4 +294,18 @@ test('game creation is rate limited and sends Retry-After',async()=>{
  const {PostgresRateLimitStore}=await import('../../backend/src/middleware/rate-limit');const store=new PostgresRateLimitStore('create');await store.resetKey('127.0.0.1');
  for(let i=0;i<30;i++) assert.equal((await fetch(base+'/api/games',{method:'POST',headers:headers(),body:'{}'})).status,400);
  const blocked=await fetch(base+'/api/games',{method:'POST',headers:headers(),body:'{}'});assert.equal(blocked.status,429);assert.ok(Number(blocked.headers.get('retry-after'))>0);await store.resetKey('127.0.0.1');
+});
+
+test("empty and unparsed request bodies still reach route validation", async () => {
+  for (const path of ["/api/games", "/api/default-sessions"]) {
+    for (const body of [undefined, "unparsed text"]) {
+      const res = await fetch(base + path, {
+        method: "POST",
+        headers: { ...headers(), "content-type": "text/plain" },
+        body,
+      });
+      assert.equal(res.status, 400);
+      assert.equal(typeof (await res.json()).error, "string");
+    }
+  }
 });
