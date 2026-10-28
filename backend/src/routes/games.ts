@@ -75,7 +75,7 @@ router.post('/', createGameLimiter, trustedOrigin, authenticateString, async (re
 });
 
 // GET /api/games/:id - Get specific game (public or owner)
-router.get('/:id', hostLimiter, optionalAuth, async (req: AuthenticatedRequest, res) => {
+router.get('/:id', hostLimiter, optionalAuth, async (req: AuthenticatedRequest<{ id: string }>, res) => {
   try {
     const { id } = req.params;
 
@@ -111,7 +111,7 @@ router.get('/:id', hostLimiter, optionalAuth, async (req: AuthenticatedRequest, 
 });
 
 // PUT /api/games/:id - Update game (requires auth and ownership)
-router.put('/:id', hostLimiter, trustedOrigin, authenticateString, async (req: AuthenticatedRequest, res) => {
+router.put('/:id', hostLimiter, trustedOrigin, authenticateString, async (req: AuthenticatedRequest<{ id: string }>, res) => {
   try {
     const { id } = req.params;
     const { name, challenges, isPublic } = req.body;
@@ -151,7 +151,7 @@ router.put('/:id', hostLimiter, trustedOrigin, authenticateString, async (req: A
 });
 
 // DELETE /api/games/:id - Delete game (requires auth and ownership)
-router.delete('/:id', hostLimiter, trustedOrigin, authenticateString, async (req: AuthenticatedRequest, res) => {
+router.delete('/:id', hostLimiter, trustedOrigin, authenticateString, async (req: AuthenticatedRequest<{ id: string }>, res) => {
   try {
     const { id } = req.params;
 
@@ -300,7 +300,7 @@ router.post('/:id/progress', async (req, res) => {
 });
 
 // GET /api/games/:id/results - Get game results (Leaderboard) - Requires Auth
-router.get('/:id/results', hostLimiter, authenticateString, async (req: AuthenticatedRequest, res) => {
+router.get('/:id/results', hostLimiter, authenticateString, async (req: AuthenticatedRequest<{ id: string }>, res) => {
   try {
     const { id } = req.params;
 
