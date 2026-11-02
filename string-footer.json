@@ -1,18 +1,19 @@
 {
-  "version": "1.0.1",
+  "version": "1.1.0",
   "source": "https://github.com/String-sg/string-footer",
-  "sha256": "1a0ba7ef66dd8944d12cf9889db237c6f6f05b326d213ba0e51d83d88518aea1",
+  "sha256": "97c7d15e26f67d804090ad5e7b804ac31114c854143d8b9cf527780cc3fc4393",
   "product": "bingo",
   "variant": "compact",
   "credits": [
     {
-      "label": "Made with ❤️ by",
+      "label": "Created by",
       "name": "String Team",
+      "creation": "bingo",
       "url": "https://for.edu.sg/str-bingo-tree"
     },
     {
       "label": "Inspired by",
-      "name": "Seng Kwang (Physics educator @ TJC)"
+      "name": "Seng Kwang"
     }
   ]
 }
