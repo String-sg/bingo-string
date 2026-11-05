@@ -32,7 +32,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npx prisma migrate deploy --schema backend/prisma/schema.prisma
-      - run: npm run build
+      - run: npm run build:vercel
       - run: npm run check:backend
       - run: npm run check:startup
       - run: npm run test:backend
