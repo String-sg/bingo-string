@@ -19,3 +19,7 @@ The database predates the code already deployed. Bypassing the limiter would onl
 - Custom schema checker or automatic migration during build: adds code or mutates production without the required approval.
 
 `migrate status` checks migration history, not arbitrary manual schema drift. Revisit schema-diff checks if drift becomes an observed problem. It cannot protect the database after build time, so release still requires the documented post-migration and browser checks.
+
+## CI runner compatibility
+
+The first PR run passed the guarded build, backend typecheck, startup and all backend tests on Node 22, then failed before browser tests because `ubuntu-latest` resolved to Ubuntu 26.04, unsupported by the locked Playwright 1.56.0. Pin the existing job to supported Ubuntu 24.04; no dependency upgrade is needed.
