@@ -6,6 +6,8 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
+        "check:db": "prisma migrate status --schema=./backend/prisma/schema.prisma",
+        "build:vercel": "npm run check:db && npm run build",
         "deploy": "npm run build && gh-pages -d dist",
         "test": "playwright test",
         "test:ui": "playwright test --ui",

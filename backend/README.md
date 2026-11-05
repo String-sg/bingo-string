@@ -65,6 +65,39 @@ Rollback application code first; retain the additive columns, backfilled IDs,
 audit records and compatibility trigger. Do not drop new data during rollback.
 Production migrations/configuration/deployments require separate approval.
 
+### Host account-check incident: missing migrations
+
+The reported `Request service unavailable. Please retry.` came from the shared
+request limiter before String ID was contacted. Production was missing both
+`202610250001_stable_string_identity` and `202610250002_host_request_limits`.
+Bypassing the limiter would leave the stable-owner columns missing too.
+
+`npm run check:db` uses Prisma's read-only migration-status check. Vercel runs
+`npm run build:vercel`, which checks migrations before the frontend build; CI
+uses that same command. Pending/failed migrations, absent configuration or an
+unreachable database stop deployment. This checks migration history, not manual
+schema drift. `npm run build` remains available for local frontend-only work.
+
+For the separately approved production repair:
+
+1. Confirm the intended Bingo database, take a restorable backup, and refresh
+   migration status plus aggregate user/game and unmatched-owner counts. The
+   initial read-only baseline was 12 users, 9 games and zero unmatched owners.
+   Use Neon's direct connection for backup/migration commands; retain the runtime
+   pooled connection unchanged.
+2. Confirm only the two migrations above are pending. Review their existing SQL,
+   then run `npx prisma migrate deploy --schema backend/prisma/schema.prisma`
+   against that database. Do not use `migrate dev`, reset or an automatic build
+   migration against production.
+3. Run `npm run check:db`. Compare original user/game IDs and owner relationships
+   with the backup; counts must not decrease. Confirm both migration records are
+   finished, stable-owner columns exist and the shared request counter works.
+4. Verify live `/api/auth/me` returns 401 when signed out, and a real signed-in
+   host can open My games and resume/create/share on mobile. Recheck public guest
+   play. Local tests mock String ID and do not prove this production pilot.
+5. Review and release the build gate separately. For application rollback retain
+   completed migrations, backfilled ownership, audit data and compatibility trigger.
+
 ## Verification
 
 Use an isolated local database. Backend tests clear only test data and refuse
