@@ -4,7 +4,7 @@ import { CameraManager } from './cameraManager.js';
 import { TouchManager } from './touchManager.js';
 import { ModalManager } from './modalManager.js';
 import { AuthManager } from './authManager.js';
-import { getConfig } from './config.js';
+import { CONFIG, getConfig } from './config.js';
 
 class BingoApp {
     constructor() {
@@ -44,9 +44,10 @@ class BingoApp {
                 await this.initializeDefaultGameSession();
             }
 
+            if (this.gameUnavailable) { const actions=document.querySelector('.footer .button-row');if(actions)actions.hidden=true;return; }
             this.setupEventListeners();
-            this.setupTouchManager();
-            this.loadCellImages(); // Load saved images on startup
+            if (!this.gameUnavailable) this.setupTouchManager();
+            if (!this.gameUnavailable) this.loadCellImages(); // Load only this game/session
             this.setupAnalytics(); // Initialize Google Analytics
         } catch (error) {
             console.error('Failed to initialize app:', error);
@@ -118,13 +119,14 @@ class BingoApp {
             await this.setupGrid(game.challengesJson, game.gridSize || 5);
 
             // Initialize session
-            this.initializeSession();
+            if (!new URLSearchParams(location.search).has('preview')) this.initializeSession();
+            else { const hint=document.createElement('p');hint.textContent='Board preview — no player entry is recorded.';document.querySelector('.footer')?.prepend(hint); }
 
         } catch (error) {
             console.error('Failed to load custom game:', error);
             this.showError('Failed to load the game. It might be private or deleted.');
-            // Fallback to default grid
-            await this.setupGrid();
+            const grid=document.getElementById('bingoGrid');grid.replaceChildren();const message=document.createElement('p');message.textContent='Game unavailable. Check the link with your host or try again later.';grid.append(message);
+            this.gameUnavailable=true;
         }
     }
 
@@ -222,22 +224,6 @@ class BingoApp {
             }
         });
 
-        // Admin dashboard buttons
-        const backToGameBtn = document.getElementById('backToGameBtn');
-        if (backToGameBtn) {
-            backToGameBtn.addEventListener('click', () => this.authManager.hideAdminDashboard());
-        }
-
-        const createNewGameBtn = document.getElementById('createNewGameBtn');
-        const createNewGameBtn2 = document.getElementById('createNewGameBtn2');
-
-        if (createNewGameBtn) {
-            createNewGameBtn.addEventListener('click', () => this.handleCreateNewGame());
-        }
-
-        if (createNewGameBtn2) {
-            createNewGameBtn2.addEventListener('click', () => this.handleCreateNewGame());
-        }
 
     }
 
@@ -249,6 +235,7 @@ class BingoApp {
     }
 
     handleCellClick(index) {
+        if (!this.bingoGrid || (this.gameId && !this.sessionId)) return;
         const cell = this.bingoGrid.cells[index];
         const isCompleted = cell.classList.contains('completed');
 
@@ -311,6 +298,7 @@ class BingoApp {
                 }));
 
                 this.joinGameSession();
+                this.loadCellImages();
             });
         }
     }
@@ -381,7 +369,7 @@ class BingoApp {
                 body: JSON.stringify({
                     sessionId: this.sessionId,
                     challengeSet: CONFIG.CHALLENGE_FILE,
-                    gridSize: CONFIG.GRID.size
+                    gridSize: this.bingoGrid.gridSize
                 })
             });
 
@@ -454,11 +442,13 @@ class BingoApp {
         }
     }
 
+    photoStorageKey() { return `bingo:photos:v2:${this.gameId || CONFIG.CHALLENGE_FILE}:${this.sessionId || 'preview'}`; }
+
     storeCellImage(cellIndex, imageData) {
         // Store in localStorage for persistence
-        const cellImages = JSON.parse(localStorage.getItem('bingoCellImages') || '{}');
+        const cellImages = JSON.parse(localStorage.getItem(this.photoStorageKey()) || '{}');
         cellImages[cellIndex] = imageData;
-        localStorage.setItem('bingoCellImages', JSON.stringify(cellImages));
+        localStorage.setItem(this.photoStorageKey(), JSON.stringify(cellImages));
 
         // Immediately apply the image to the cell
         const cell = this.bingoGrid.cells[cellIndex];
@@ -483,8 +473,10 @@ class BingoApp {
     }
 
     loadCellImages() {
-        const cellImages = JSON.parse(localStorage.getItem('bingoCellImages') || '{}');
+        const cellImages = JSON.parse(localStorage.getItem(this.photoStorageKey()) || '{}');
+        if (!this.bingoGrid) return;
         Object.entries(cellImages).forEach(([index, imageData]) => {
+            if (typeof imageData !== 'string' || !/^data:image\//.test(imageData)) return;
             const cellIndex = parseInt(index);
             const cell = this.bingoGrid.cells[cellIndex];
             if (cell) {
@@ -492,12 +484,16 @@ class BingoApp {
                 cell.style.backgroundSize = 'cover';
                 cell.style.backgroundPosition = 'center';
                 cell.classList.add('has-image');
+                this.bingoGrid.completedCells.add(cellIndex);
+                cell.classList.add('completed');
+                cell.setAttribute('aria-pressed','true');
             }
         });
+        this.bingoGrid.checkForBingo();
     }
 
     showPhotoModal(cellIndex) {
-        const cellImages = JSON.parse(localStorage.getItem('bingoCellImages') || '{}');
+        const cellImages = JSON.parse(localStorage.getItem(this.photoStorageKey()) || '{}');
         const imageData = cellImages[cellIndex];
 
         if (imageData) {
@@ -506,24 +502,19 @@ class BingoApp {
             modal.className = 'modal';
             modal.style.display = 'block';
 
-            const challenge = this.challengeLoader.getChallenge(cellIndex);
+            const challenge = this.bingoGrid.challenges[cellIndex];
             const challengeText = challenge ? challenge.text : `Challenge ${cellIndex + 1}`;
 
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                    <h2>${challengeText}</h2>
-                    <div class="preview-container">
-                        <img src="${imageData}" class="preview-image" alt="Challenge proof">
-                    </div>
-                    <div style="margin-top: 20px; text-align: center;">
-                        <button class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Close</button>
-                        <button class="btn btn-danger" onclick="window.bingoApp.removeCellImage(${cellIndex})">Remove Photo</button>
-                    </div>
-                </div>
-            `;
-
+            modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true'); modal.setAttribute('aria-label','Challenge photo'); modal.tabIndex=-1;
+            const content=document.createElement('div');content.className='modal-content';
+            const title=document.createElement('h2');title.textContent=challengeText;
+            const image=document.createElement('img');image.alt='Challenge proof';image.className='preview-image';image.src=imageData;
+            const close=document.createElement('button');close.type='button';close.className='btn btn-secondary';close.textContent='Close';close.onclick=()=>{modal.remove();this.bingoGrid.cells[cellIndex]?.focus();};
+            const remove=document.createElement('button');remove.type='button';remove.className='btn btn-danger';remove.textContent='Remove photo';remove.onclick=()=>this.removeCellImage(cellIndex);
+            content.append(title,image,close,remove);modal.append(content);
+            modal.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();close.click();}if(e.key==='Tab'){e.preventDefault();(document.activeElement===close?remove:close).focus();}});
             document.body.appendChild(modal);
+            modal.focus();
 
             // Close modal when clicking outside
             modal.addEventListener('click', (e) => {
@@ -536,9 +527,9 @@ class BingoApp {
 
     removeCellImage(cellIndex) {
         // Remove from localStorage
-        const cellImages = JSON.parse(localStorage.getItem('bingoCellImages') || '{}');
+        const cellImages = JSON.parse(localStorage.getItem(this.photoStorageKey()) || '{}');
         delete cellImages[cellIndex];
-        localStorage.setItem('bingoCellImages', JSON.stringify(cellImages));
+        localStorage.setItem(this.photoStorageKey(), JSON.stringify(cellImages));
 
         // Remove background image from cell
         const cell = this.bingoGrid.cells[cellIndex];
@@ -551,7 +542,9 @@ class BingoApp {
         this.bingoGrid.setCellIncomplete(cellIndex);
 
         // Close modal
-        document.querySelector('.modal').remove();
+        document.querySelector('[aria-label="Challenge photo"]')?.remove();
+        this.updateSessionProgress();
+        this.bingoGrid.cells[cellIndex]?.focus();
     }
 
     handleBingo() {
@@ -561,10 +554,11 @@ class BingoApp {
 
     reset() {
         // Clear localStorage
-        localStorage.removeItem('bingoCellImages');
+        localStorage.removeItem(this.photoStorageKey());
 
         // Reset grid
         this.bingoGrid.reset();
+        this.updateSessionProgress();
 
         // Reset touch manager
         if (this.touchManager) {
@@ -602,7 +596,7 @@ class BingoApp {
 
     getStatus() {
         const completedCells = this.bingoGrid.getCompletedCells();
-        const totalCells = CONFIG.GRID.size * CONFIG.GRID.size;
+        const totalCells = this.bingoGrid.gridSize * this.bingoGrid.gridSize;
         return {
             completed: completedCells.length,
             total: totalCells,
@@ -611,7 +605,7 @@ class BingoApp {
     }
 
     async downloadAllImages() {
-        const cellImages = JSON.parse(localStorage.getItem('bingoCellImages') || '{}');
+        const cellImages = JSON.parse(localStorage.getItem(this.photoStorageKey()) || '{}');
         const imageEntries = Object.entries(cellImages);
 
         if (imageEntries.length === 0) {
@@ -622,7 +616,7 @@ class BingoApp {
         // For a single image, download directly
         if (imageEntries.length === 1) {
             const [index, imageData] = imageEntries[0];
-            const challenge = this.challengeLoader.getChallenge(parseInt(index));
+            const challenge = this.bingoGrid.challenges[parseInt(index)];
             const challengeText = challenge ? challenge.text : `Challenge ${parseInt(index) + 1}`;
             this.downloadSingleImage(imageData, `bingo-${parseInt(index) + 1}-${challengeText.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`);
 
@@ -643,7 +637,7 @@ class BingoApp {
             const zip = new JSZip();
 
             for (const [index, imageData] of imageEntries) {
-                const challenge = this.challengeLoader.getChallenge(parseInt(index));
+                const challenge = this.bingoGrid.challenges[parseInt(index)];
                 const challengeText = challenge ? challenge.text : `Challenge ${parseInt(index) + 1}`;
                 const filename = `bingo-${parseInt(index) + 1}-${challengeText.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`;
 

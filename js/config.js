@@ -10,7 +10,7 @@ class ConfigManager {
             // Default/fallback configuration
             GOOGLE_CLIENT_ID: undefined,
             GOOGLE_ANALYTICS_ID: undefined,
-            API_BASE_URL: 'http://localhost:3000/api',
+            API_BASE_URL: '/api',
             ENVIRONMENT: 'development',
             DEBUG_MODE: true,
             LOG_LEVEL: 'debug'

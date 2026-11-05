@@ -91,4 +91,8 @@ jspm_packages/
 # Playwright test results
 test-results/
 playwright-report/
-playwright/.cache/ 
+playwright/.cache/
+
+# All local environment variants; only examples are versioned.
+.env*
+!.env.example

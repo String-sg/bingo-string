@@ -1,344 +1,276 @@
-import { getConfig } from './config.js';
-import { AuthManager } from './authManager.js';
-
+import { getConfig } from "./config.js";
+import { AuthManager } from "./authManager.js";
+import { DRAFT_KEY, parseChallengeCsv, STARTERS } from "./host-draft.js";
+const $ = (id) => document.getElementById(id);
 class GameCreationApp {
-    constructor() {
-        this.config = null;
-        this.authManager = new AuthManager();
-        // Don't call init() here, wait for DOMContentLoaded
-    }
-
-    async init() {
-        try {
-            // Load configuration
-            console.log('🔧 Loading configuration for game creation...');
-            this.config = await getConfig();
-            console.log('🔧 Configuration loaded:', this.config.ENVIRONMENT);
-
-            // Wait for AuthManager to be ready
-            console.log('🔧 Waiting for AuthManager...');
-            await this.authManager.init();
-            console.log('🔧 AuthManager initialized');
-
-            this.setupEventListeners();
-            this.initializeBingoEditor();
-            this.setupAnalytics();
-        } catch (error) {
-            console.error('Failed to initialize game creation app:', error);
-            this.showError('Failed to load the game creation page. Please refresh.');
-        }
-    }
-
-    async setupAnalytics() {
-        try {
-            const gaId = this.config.GOOGLE_ANALYTICS_ID;
-
-            if (gaId) {
-                // Load GA script
-                const script = document.createElement('script');
-                script.async = true;
-                script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
-                document.head.appendChild(script);
-
-                // Initialize dataLayer
-                window.dataLayer = window.dataLayer || [];
-                function gtag() { dataLayer.push(arguments); }
-                window.gtag = gtag; // Make it global
-                gtag('js', new Date());
-                gtag('config', gaId);
-
-                console.log('📊 Google Analytics initialized');
-            }
-        } catch (error) {
-            console.warn('Failed to setup analytics:', error);
-        }
-    }
-
-    setupEventListeners() {
-        // Create Game button
-        const createGameBtn = document.getElementById('createGameBtn');
-        if (createGameBtn) {
-            console.log('🔧 Attaching click listener to createGameBtn');
-            createGameBtn.addEventListener('click', (e) => {
-                console.log('🖱️ Create Game button clicked');
-                this.handleGameSubmit();
-            });
-        } else {
-            console.error('❌ createGameBtn not found in DOM');
-        }
-
-        // Edit Questions button
-        const editQuestionsBtn = document.getElementById('editQuestionsBtn');
-        if (editQuestionsBtn) {
-            editQuestionsBtn.addEventListener('click', () => this.toggleEditMode());
-        }
-
-        // CSV Import button
-        const importCsvBtn = document.getElementById('importCsvBtn');
-        if (importCsvBtn) {
-            importCsvBtn.addEventListener('click', () => this.handleCsvImport());
-        }
-
-        // Focus game name input on load
-        const gameNameInput = document.getElementById('gameName');
-        if (gameNameInput) {
-            gameNameInput.focus();
-        }
-
-        // Grid Size change listener
-        const gridSizeInputs = document.querySelectorAll('input[name="gridSize"]');
-        gridSizeInputs.forEach(input => {
-            input.addEventListener('change', () => this.initializeBingoEditor());
-        });
-    }
-
-    initializeBingoEditor() {
-        const gridContainer = document.getElementById('bingoEditorGrid');
-        if (!gridContainer) return;
-
-        // Get selected grid size
-        const gridSize = parseInt(document.querySelector('input[name="gridSize"]:checked').value);
-        const totalCells = gridSize * gridSize;
-
-        // Clear existing grid
-        gridContainer.innerHTML = '';
-
-        // Update grid layout
-        gridContainer.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
-
-        // Create grid of editable cells
-        for (let i = 0; i < totalCells; i++) {
-            const cell = document.createElement('textarea');
-            cell.className = 'editor-cell';
-            cell.dataset.index = i;
-
-            // Center cell is FREE only for 5x5
-            const isCenter = gridSize === 5 && i === 12;
-
-            if (isCenter) {
-                cell.className += ' free-cell';
-                cell.value = 'FREE';
-                cell.disabled = true;
-                cell.placeholder = '';
-            } else {
-                cell.placeholder = `Q${i + 1}`;
-                cell.maxLength = 100;
-            }
-
-            gridContainer.appendChild(cell);
-        }
-    }
-
-    async handleGameSubmit() {
-        console.log('📝 Handling game submission...');
-
-        // Check if user is logged in
-        if (!this.authManager.isLoggedIn()) {
-            console.log('⚠️ User not logged in, showing auth modal');
-            this.authManager.showAuthModal();
-            return;
-        }
-
-        // Get game name
-        const gameNameInput = document.getElementById('gameName');
-        const gameName = gameNameInput?.value.trim();
-
-        if (!gameName) {
-            alert('Please enter a game name');
-            gameNameInput?.focus();
-            return;
-        }
-
-        // Get selected grid size
-        const gridSize = parseInt(document.querySelector('input[name="gridSize"]:checked').value);
-
-        // Get all questions from the grid
-        const challenges = [];
-        const cells = document.querySelectorAll('.editor-cell');
-
-        cells.forEach((cell, index) => {
-            let text = '';
-            // Check for center cell in 5x5
-            if (gridSize === 5 && index === 12) {
-                text = 'FREE'; // Center cell
-            } else {
-                text = cell.value.trim() || `Question ${index + 1}`;
-            }
-
-            challenges.push({
-                id: `q${index}`,
-                text: text
-            });
-        });
-
-        try {
-            const createBtn = document.getElementById('createGameBtn');
-            if (createBtn) {
-                createBtn.disabled = true;
-                createBtn.textContent = 'Creating...';
-            }
-
-            const response = await fetch(`${this.config.API_BASE_URL}/games`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...this.authManager.getAuthHeaders()
-                },
-                body: JSON.stringify({
-                    name: gameName,
-                    challenges: challenges,
-                    gridSize: gridSize,
-                    isPublic: true
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to create game: ${response.status}`);
-            }
-
-            const game = await response.json();
-            console.log('Game created:', game);
-
-            // Generate shareable link
-            const shareLink = `${window.location.origin}/play/${game.id}`;
-
-            // Show success and redirect
-            alert(`Game created successfully!\n\nShare this link:\n${shareLink}`);
-
-            // Track game creation
-            if (typeof gtag !== 'undefined') {
-                gtag('event', 'game_created', {
-                    'event_category': 'engagement',
-                    'event_label': 'custom_game',
-                    'value': 1
-                });
-            }
-
-            // Redirect to the new game
-            window.location.href = `/play/${game.id}`;
-
-        } catch (error) {
-            console.error('Error creating game:', error);
-            this.showError('Failed to create game. Please try again.');
-
-            const createBtn = document.getElementById('createGameBtn');
-            if (createBtn) {
-                createBtn.disabled = false;
-                createBtn.textContent = 'Create Game';
-            }
-        }
-    }
-
-    toggleEditMode() {
-        alert('You can edit any cell by clicking directly in it.');
-    }
-
-    handleCsvImport() {
-        // Create hidden file input for CSV upload
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = '.csv';
-        fileInput.style.display = 'none';
-
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                this.importCsvFile(file);
-            }
-        });
-
-        document.body.appendChild(fileInput);
-        fileInput.click();
-        document.body.removeChild(fileInput);
-    }
-
-    importCsvFile(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const csvText = e.target.result;
-                const lines = csvText.split('\n').filter(line => line.trim());
-
-                if (lines.length < 24) {
-                    alert('CSV file must contain at least 24 questions (excluding the center FREE cell)');
-                    return;
-                }
-
-                const cells = document.querySelectorAll('.editor-cell');
-                const gridSize = parseInt(document.querySelector('input[name="gridSize"]:checked').value);
-                let csvIndex = 0;
-
-                // Check for header row and skip if present
-                if (lines.length > 0 && lines[0].toLowerCase().includes('number') && lines[0].toLowerCase().includes('challenge')) {
-                    console.log('Skipping CSV header row');
-                    csvIndex = 1;
-                }
-
-                cells.forEach((cell, index) => {
-                    const isCenter = gridSize === 5 && index === 12;
-                    if (!isCenter) { // Skip center cell
-                        if (csvIndex < lines.length) {
-                            // Handle CSV parsing better (remove quotes, split by comma if needed, but here we assume line is just the challenge)
-                            // The user's CSV seems to be "number,challenge", so we might need to split
-                            let line = lines[csvIndex].trim();
-
-                            // Simple CSV parsing: if it has a comma, take the second part
-                            if (line.includes(',')) {
-                                const parts = line.split(',');
-                                // If first part is a number, take the rest
-                                if (!isNaN(parseInt(parts[0]))) {
-                                    line = parts.slice(1).join(',').trim();
-                                }
-                            }
-
-                            cell.value = line.replace(/"/g, '');
-                            csvIndex++;
-                        }
-                    }
-                });
-
-                alert(`Successfully imported ${csvIndex} questions from CSV file!`);
-
-            } catch (error) {
-                console.error('CSV import error:', error);
-                alert('Error reading CSV file. Please make sure it\'s a valid CSV with one question per line.');
-            }
+  constructor() {
+    this.authManager = new AuthManager();
+    this.step = 0;
+    this.busy = false;
+    this.draft = {
+      name: "",
+      size: 3,
+      prompts: Array(24).fill(""),
+      createKey: crypto.randomUUID(),
+    };
+    this.init();
+  }
+  async init() {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "null");
+      if (saved && [3, 5].includes(saved.size) && Array.isArray(saved.prompts))
+        this.draft = {
+          ...this.draft,
+          ...saved,
+          prompts: Array.from({ length: 24 }, (_, i) =>
+            String(saved.prompts[i] || "").slice(0, 100),
+          ),
         };
-
-        reader.readAsText(file);
+    } catch {}
+    $("gameName").value = this.draft.name;
+    document.querySelector(
+      `input[name=gridSize][value="${this.draft.size}"]`,
+    ).checked = true;
+    this.renderPrompts();
+    this.bind();
+    await this.authManager.ready;
+    this.config = await getConfig();
+    this.updateAuth();
+  }
+  updateAuth() {
+    const ready = this.authManager.isLoggedIn();
+    $("wizard").hidden = !ready;
+    $("editorSignIn").hidden = ready;
+    $("authGate").hidden = ready;
+    $("authGate").textContent =
+      this.authManager.status === "error"
+        ? this.authManager.message
+        : "Sign in with String ID to create and manage your game. Your draft stays here.";
+    if (ready) this.showStep(0);
+  }
+  bind() {
+    $("editorSignIn").onclick = () => this.authManager.showAuthModal();
+    $("gameName").oninput = () => {
+      this.draft.name = $("gameName").value;
+      this.save();
+    };
+    document.querySelectorAll("input[name=gridSize]").forEach(
+      (input) =>
+        (input.onchange = () => {
+          this.draft.size = Number(input.value);
+          this.renderPrompts();
+          this.save();
+        }),
+    );
+    $("starterBtn").onclick = () => {
+      this.draft.prompts = this.draft.prompts.map((v, i) =>
+        v.trim() ? v : STARTERS[i],
+      );
+      this.renderPrompts();
+      this.save();
+    };
+    $("csvFile").onchange = async (e) => {
+      try {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 100000)
+          throw new Error("CSV must be smaller than 100 KB.");
+        let values = parseChallengeCsv(await file.text());
+        if (
+          this.draft.size === 5 &&
+          values.length === 25 &&
+          values[12].toUpperCase() === "FREE"
+        )
+          values.splice(12, 1);
+        const needed = this.count();
+        if (values.length !== needed)
+          throw new Error(
+            `This board needs exactly ${needed} prompts; the CSV contains ${values.length}.`,
+          );
+        values.forEach((v, i) => (this.draft.prompts[i] = v));
+        this.renderPrompts();
+        this.save();
+        this.error("");
+      } catch (cause) {
+        this.error(cause.message);
+      } finally {
+        e.target.value = "";
+      }
+    };
+    $("previousBtn").onclick = () => this.showStep(this.step - 1);
+    $("nextBtn").onclick = () => {
+      if (this.validate()) this.showStep(this.step + 1);
+    };
+    $("createGameBtn").onclick = () => this.handleGameSubmit();
+    $("copyLinkBtn").onclick = async () => {
+      try {
+        await navigator.clipboard.writeText($("shareLink").value);
+        $("shareStatus").textContent = "Link copied. Send it to your players.";
+      } catch {
+        $("shareLink").focus();
+        $("shareLink").select();
+        $("shareStatus").textContent = "Select and copy the link above.";
+      }
+    };
+  }
+  count() {
+    return this.draft.size === 3 ? 9 : 24;
+  }
+  save() {
+    try {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(this.draft));
+      $("draftNote").textContent = "Draft saved in this browser tab.";
+    } catch {
+      $("draftNote").textContent =
+        "Browser storage is unavailable. Keep this tab open to retain your draft.";
     }
-
-    getUserEmail() {
-        // Try to get user email from localStorage (from auth session)
-        try {
-            const stored = localStorage.getItem('bingoAuth');
-            if (stored) {
-                const session = JSON.parse(stored);
-                return session.user?.email;
-            }
-        } catch (error) {
-            console.log('No auth session found');
-        }
-        return null;
+    this.updateCount();
+  }
+  updateCount() {
+    const n = this.draft.prompts
+      .slice(0, this.count())
+      .filter((v) => v.trim()).length;
+    $("promptCount").textContent = `${n} of ${this.count()} challenges ready`;
+  }
+  renderPrompts() {
+    const list = $("promptList");
+    list.replaceChildren();
+    for (let i = 0; i < this.count(); i++) {
+      const label = document.createElement("label");
+      label.htmlFor = `prompt-${i}`;
+      label.textContent = `Challenge ${i + 1}`;
+      const input = document.createElement("textarea");
+      input.id = `prompt-${i}`;
+      input.maxLength = 100;
+      input.rows = 2;
+      input.value = this.draft.prompts[i];
+      input.placeholder = "An action players can complete";
+      input.oninput = () => {
+        this.draft.prompts[i] = input.value;
+        input.removeAttribute("aria-invalid");
+        this.save();
+      };
+      label.append(input);
+      list.append(label);
     }
-
-    showError(message) {
-        const status = document.getElementById('status');
-        if (status) {
-            status.textContent = message;
-            status.className = 'status error';
-            status.style.display = 'block';
-
-            setTimeout(() => {
-                status.style.display = 'none';
-            }, 5000);
-        }
+    this.updateCount();
+  }
+  error(message) {
+    $("formError").textContent = message;
+    if (message) $("formError").focus();
+  }
+  validate() {
+    if (!this.draft.name.trim()) {
+      this.error("Give your game a name before continuing.");
+      $("gameName").focus();
+      return false;
     }
+    if (this.step >= 1) {
+      const missing = this.draft.prompts
+        .slice(0, this.count())
+        .findIndex((v) => !v.trim());
+      if (missing >= 0) {
+        this.error(
+          `Add challenge ${missing + 1} before continuing. Fill blanks with starter prompts if you need ideas.`,
+        );
+        const field = $(`prompt-${missing}`);
+        field.setAttribute("aria-invalid", "true");
+        field.focus();
+        return false;
+      }
+    }
+    this.error("");
+    return true;
+  }
+  challenges() {
+    const prompts = this.draft.prompts
+      .slice(0, this.count())
+      .map((v) => v.trim());
+    if (this.draft.size === 5) prompts.splice(12, 0, "FREE");
+    return prompts.map((text, i) => ({ id: `q${i}`, text }));
+  }
+  showStep(step) {
+    this.step = Math.max(0, Math.min(2, step));
+    this.error("");
+    document
+      .querySelectorAll("[data-step]")
+      .forEach((el) => (el.hidden = Number(el.dataset.step) !== this.step));
+    document.querySelectorAll("#stepList li").forEach((el, i) => {
+      if (i === this.step) el.setAttribute("aria-current", "step");
+      else el.removeAttribute("aria-current");
+    });
+    $("previousBtn").hidden = this.step === 0;
+    $("nextBtn").hidden = this.step === 2;
+    $("createGameBtn").hidden = this.step !== 2;
+    if (this.step === 2) {
+      $("reviewName").textContent = this.draft.name;
+      $("reviewSummary").textContent =
+        `${this.draft.size} × ${this.draft.size} · ${this.count()} challenges${this.draft.size === 5 ? " + FREE centre" : ""}`;
+      const preview = $("boardPreview");
+      preview.replaceChildren();
+      preview.style.gridTemplateColumns = `repeat(${this.draft.size},1fr)`;
+      for (const c of this.challenges()) {
+        const cell = document.createElement("div");
+        cell.textContent = c.text;
+        preview.append(cell);
+      }
+    }
+    document.querySelector(`[data-step="${this.step}"] h2`).focus();
+  }
+  async handleGameSubmit() {
+    if (this.busy || !this.validate()) return;
+    this.save();
+    this.busy = true;
+    const button = $("createGameBtn");
+    button.disabled = true;
+    button.textContent = "Creating…";
+    try {
+      const response = await fetch(`${this.config.API_BASE_URL}/games`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: this.draft.name.trim(),
+          gridSize: this.draft.size,
+          challenges: this.challenges(),
+          isPublic: true,
+          createKey: this.draft.createKey,
+        }),
+      });
+      if (response.status === 401) {
+        this.authManager.isAuthenticated = false;
+        this.authManager.user = null;
+        this.authManager.updateUI();
+        this.authManager.status = "signedOut";
+        this.authManager.showAuthModal();
+        throw new Error(
+          "Your session expired. Sign in again; your draft is saved.",
+        );
+      }
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(
+          body.error ||
+            "Could not create the game. Your draft is saved; please retry.",
+        );
+      }
+      const game = await response.json();
+      $("wizard").hidden = true;
+      $("shareReady").hidden = false;
+      $("shareLink").value =
+        `${location.origin}/play/${encodeURIComponent(game.id)}`;
+      $("previewGameLink").href =
+        `/play/${encodeURIComponent(game.id)}?preview=1`;
+      $("readyTitle").focus();
+      try {
+        sessionStorage.removeItem(DRAFT_KEY);
+      } catch {}
+    } catch (cause) {
+      this.error(cause.message);
+    } finally {
+      this.busy = false;
+      button.disabled = false;
+      button.textContent = "Create game";
+    }
+  }
 }
-
-// Initialize the game creation app when DOM is loaded
-// Initialize the game creation app when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    const app = new GameCreationApp();
-    app.init();
-});
+window.gameCreationApp = new GameCreationApp();

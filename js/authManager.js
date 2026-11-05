@@ -1,467 +1,375 @@
-import { CONFIG, getConfig } from './config.js';
-
+import { getConfig } from "./config.js";
+const SIGN_IN = "https://id.string.sg/login?continue=bingo";
+const node = (tag, text, className) => {
+  const el = document.createElement(tag);
+  if (text !== undefined) el.textContent = text;
+  if (className) el.className = className;
+  return el;
+};
 export class AuthManager {
-    constructor() {
+  constructor() {
+    this.user = null;
+    this.isAuthenticated = false;
+    this.status = "loading";
+    try {
+      localStorage.removeItem("bingoAuth");
+    } catch {}
+    document
+      .getElementById("hostGameBtn")
+      ?.addEventListener("click", () => this.beginHost());
+    document
+      .getElementById("myGamesBtn")
+      ?.addEventListener("click", () => this.redirectToAdmin());
+    document
+      .getElementById("stringLogoutBtn")
+      ?.addEventListener("click", () => this.logout());
+    for (const id of ["createNewGameBtn", "createNewGameBtn2"]) {
+      document
+        .getElementById(id)
+        ?.addEventListener("click", () => this.beginHost());
+    }
+    document
+      .getElementById("backToGameBtn")
+      ?.addEventListener("click", () => this.hideAdminDashboard());
+    this.ready = this.refresh();
+  }
+  init() {
+    return this.ready;
+  }
+  async refresh() {
+    this.config = await getConfig();
+    try {
+      const response = await fetch(`${this.config.API_BASE_URL}/auth/me`, {
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      if (response.status === 401) {
+        this.status = "signedOut";
         this.user = null;
-        this.isAuthenticated = false;
-        this.googleAuth = null;
-        this.clientId = null;
-
-        this.init();
-    }
-
-    async init() {
-        try {
-            // Load configuration first
-            console.log('🔧 AuthManager: Loading configuration...');
-            const config = await getConfig();
-            this.clientId = config.GOOGLE_CLIENT_ID;
-            console.log('🔧 AuthManager: Client ID loaded:', this.clientId);
-
-            // Wait for Google Identity Services to load
-            await this.waitForGoogleAuth();
-
-            // Initialize Google Auth
-            await this.initializeGoogleAuth();
-
-            // Check for existing session
-            this.loadStoredSession();
-
-        } catch (error) {
-            console.error('Failed to initialize auth:', error);
-        }
-    }
-
-    waitForGoogleAuth() {
-        return new Promise((resolve, reject) => {
-            if (window.google?.accounts?.id) {
-                resolve();
-                return;
-            }
-
-            let attempts = 0;
-            const maxAttempts = 50;
-            const checkGoogle = () => {
-                attempts++;
-                if (window.google?.accounts?.id) {
-                    resolve();
-                } else if (attempts >= maxAttempts) {
-                    reject(new Error('Google Identity Services failed to load'));
-                } else {
-                    setTimeout(checkGoogle, 100);
-                }
-            };
-            checkGoogle();
-        });
-    }
-
-    async initializeGoogleAuth() {
-        console.log('🔧 Initializing Google Auth with Client ID:', this.clientId);
-
-        if (!this.clientId || this.clientId === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
-            console.error('❌ Google Client ID not configured. Current value:', this.clientId);
-            console.error('❌ CONFIG object:', CONFIG);
-            return;
-        }
-
-        window.google.accounts.id.initialize({
-            client_id: this.clientId,
-            callback: this.handleGoogleResponse.bind(this),
-            auto_select: false,
-            cancel_on_tap_outside: true
-        });
-
-        // Render the sign-in button
-        this.renderSignInButton();
-    }
-
-    renderSignInButton() {
-        const signInBtn = document.getElementById('googleSignInBtn');
-        if (signInBtn) {
-            window.google.accounts.id.renderButton(signInBtn, {
-                theme: 'outline',
-                size: 'large',
-                text: 'signin_with',
-                width: 300
-            });
-        }
-    }
-
-    handleGoogleResponse(response) {
-        try {
-            // Decode the JWT token
-            const userInfo = this.parseJWT(response.credential);
-
-            this.user = {
-                id: userInfo.sub,
-                email: userInfo.email,
-                name: userInfo.name,
-                picture: userInfo.picture,
-                token: response.credential
-            };
-
-            this.isAuthenticated = true;
-            this.storeSession();
-            this.updateUI();
-
-            // Close auth modal and redirect to admin (only on homepage)
-            this.closeAuthModal();
-
-            // Don't redirect if we're on the game creation page
-            if (!window.location.pathname.includes('new.html')) {
-                this.redirectToAdmin();
-            }
-
-            // Track successful login
-            if (typeof gtag !== 'undefined') {
-                gtag('event', 'login', {
-                    'event_category': 'engagement',
-                    'event_label': 'google_oauth',
-                    'value': 1
-                });
-            }
-
-        } catch (error) {
-            console.error('Failed to handle Google response:', error);
-            this.showError('Login failed. Please try again.');
-        }
-    }
-
-    parseJWT(token) {
-        try {
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
-        } catch (error) {
-            throw new Error('Invalid token format');
-        }
-    }
-
-    storeSession() {
-        if (this.user) {
-            localStorage.setItem('bingoAuth', JSON.stringify({
-                user: this.user,
-                timestamp: Date.now()
-            }));
-        }
-    }
-
-    loadStoredSession() {
-        try {
-            console.log('🔧 AuthManager: Loading stored session...');
-            const stored = localStorage.getItem('bingoAuth');
-            if (stored) {
-                const session = JSON.parse(stored);
-                console.log('🔧 AuthManager: Found stored session', session);
-
-                // Check if session is still valid
-                if (Date.now() - session.timestamp < CONFIG.SESSION_TIMEOUT) {
-                    this.user = session.user;
-                    this.isAuthenticated = true;
-                    console.log('🔧 AuthManager: Session restored, user:', this.user.email);
-                    this.updateUI();
-                } else {
-                    console.log('🔧 AuthManager: Session expired');
-                    // Session expired
-                    this.logout();
-                }
-            } else {
-                console.log('🔧 AuthManager: No stored session found');
-            }
-        } catch (error) {
-            console.error('Failed to load stored session:', error);
-            this.logout();
-        }
-    }
-
-    logout() {
+      } else if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        this.status = "error";
+        this.message =
+          body.error || "Host access is temporarily unavailable. Please retry.";
         this.user = null;
-        this.isAuthenticated = false;
-        localStorage.removeItem('bingoAuth');
-        this.updateUI();
-
-        // Track logout
-        if (typeof gtag !== 'undefined') {
-            gtag('event', 'logout', {
-                'event_category': 'engagement',
-                'event_label': 'manual',
-                'value': 1
-            });
-        }
+      } else {
+        this.user = await response.json();
+        this.status = "ready";
+      }
+    } catch {
+      this.status = "error";
+      this.message =
+        "Could not reach the account service. Check your connection and retry.";
+      this.user = null;
     }
-
-    updateUI() {
-        const authBtn = document.getElementById('authBtn');
-        const makeYourOwnBtn = document.getElementById('makeYourOwnBtn');
-        const userInfo = document.getElementById('userInfo');
-        const userName = document.getElementById('userName');
-        const userAvatar = document.getElementById('userAvatar');
-
-        if (this.isAuthenticated && this.user) {
-            // Show authenticated state
-            if (authBtn) authBtn.style.display = 'none';
-            if (makeYourOwnBtn) makeYourOwnBtn.style.display = 'inline-block';
-            if (userInfo) userInfo.style.display = 'block';
-            if (userName) userName.textContent = this.user.name;
-            if (userAvatar) userAvatar.src = this.user.picture;
-        } else {
-            // Show unauthenticated state
-            if (authBtn) authBtn.style.display = 'inline-block';
-            if (makeYourOwnBtn) makeYourOwnBtn.style.display = 'none';
-            if (userInfo) userInfo.style.display = 'none';
-        }
+    this.isAuthenticated = !!this.user;
+    this.updateUI();
+    let intent;
+    try {
+      intent = sessionStorage.getItem("bingo:host-intent");
+    } catch {}
+    if (this.user && window.location.pathname === "/" && intent === "create") {
+      sessionStorage.removeItem("bingo:host-intent");
+      window.location.assign("/new.html");
+    } else if (
+      this.user &&
+      window.location.pathname === "/" &&
+      (intent === "games" ||
+        new URLSearchParams(location.search).get("host") === "1")
+    ) {
+      try {
+        sessionStorage.removeItem("bingo:host-intent");
+      } catch {}
+      this.showAdminDashboard();
     }
-
-    showAuthModal() {
-        const modal = document.getElementById('authModal');
-        if (modal) {
-            modal.style.display = 'block';
-        }
+    return this.user;
+  }
+  updateUI() {
+    const identity = document.getElementById("hostIdentity");
+    if (identity) identity.hidden = !this.user;
+    const name = document.getElementById("hostName");
+    if (name) name.textContent = this.user?.name || "String member";
+    const myGames = document.getElementById("myGamesBtn");
+    if (myGames) myGames.hidden = !this.user;
+  }
+  async beginHost() {
+    await this.ready;
+    if (this.user) location.assign("/new.html");
+    else this.showAuthModal("create");
+  }
+  showAuthModal(
+    intent = location.pathname.includes("new.html") ? "create" : "games",
+  ) {
+    try {
+      sessionStorage.setItem("bingo:host-intent", intent);
+    } catch {}
+    let dialog = document.getElementById("hostSignInDialog");
+    if (dialog) dialog.remove();
+    dialog = node("dialog");
+    dialog.id = "hostSignInDialog";
+    dialog.className = "host-dialog";
+    dialog.setAttribute("aria-labelledby", "hostSignInTitle");
+    const title = node("h2", "Host a game");
+    title.id = "hostSignInTitle";
+    dialog.append(
+      title,
+      node(
+        "p",
+        "Create a board and share it. Players join without an account.",
+      ),
+    );
+    if (this.status === "error")
+      dialog.append(node("p", this.message, "error"));
+    dialog.append(node("p", "Your saved draft stays here while you sign in."));
+    const link = node("a", "Continue with String ID", "btn btn-primary");
+    link.href = SIGN_IN;
+    dialog.append(link);
+    const retry = node("button", "Retry account check", "btn btn-outline");
+    retry.type = "button";
+    retry.onclick = async () => {
+      retry.disabled = true;
+      await this.refresh();
+      retry.disabled = false;
+      if (this.user) {
+        dialog.close();
+        if (location.pathname.includes("new.html")) location.reload();
+        else location.assign("/new.html");
+      } else {
+        dialog.close();
+        this.showAuthModal();
+      }
+    };
+    dialog.append(retry);
+    const close = node("button", "Keep playing", "btn btn-secondary");
+    close.type = "button";
+    close.onclick = () => dialog.close();
+    dialog.append(close);
+    if (this.message?.includes("Connect")) {
+      const profile = node(
+        "a",
+        "Connect your original Google account in String ID",
+      );
+      profile.href = "https://id.string.sg/profile";
+      dialog.append(profile);
     }
-
-    closeAuthModal() {
-        const modal = document.getElementById('authModal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
+    document.body.append(dialog);
+    dialog.addEventListener("close", () =>
+      document.getElementById("hostGameBtn")?.focus(),
+    );
+    dialog.showModal();
+  }
+  closeAuthModal() {
+    document.getElementById("hostSignInDialog")?.close();
+  }
+  async logout() {
+    const response = await fetch(`${this.config.API_BASE_URL}/auth/logout`, {
+      method: "POST",
+    }).catch(() => null);
+    if (!response?.ok) {
+      this.showError(
+        "Sign-out failed. Your session may still be active. Please retry.",
+      );
+      return;
     }
-
-    async redirectToAdmin() {
-        // Call backend to ensure user is created/updated
-        try {
-            console.log('🔄 Syncing user with backend at:', `${CONFIG.API_BASE_URL}/auth/login`);
-            const response = await fetch(`${CONFIG.API_BASE_URL}/auth/login`, {
-                method: 'POST',
-                headers: this.getAuthHeaders()
-            });
-
-            if (response.ok) {
-                const userData = await response.json();
-                console.log('✅ User synced with backend:', userData);
-            } else {
-                console.error('❌ Failed to sync user with backend. Status:', response.status);
-                const errorText = await response.text();
-                console.error('❌ Error response:', errorText);
-            }
-        } catch (error) {
-            console.error('❌ Error syncing with backend:', error);
-            console.error('❌ API_BASE_URL:', CONFIG.API_BASE_URL);
-        }
-
-        // Show admin dashboard
-        this.showAdminDashboard();
+    this.user = null;
+    this.isAuthenticated = false;
+    this.status = "signedOut";
+    this.updateUI();
+    this.hideAdminDashboard();
+    this.showError(
+      "Signed out of String ID on this browser, including other String apps.",
+    );
+    if (location.pathname.includes("new.html")) location.reload();
+  }
+  async redirectToAdmin() {
+    await this.ready;
+    if (this.user) {
+      if (location.pathname !== "/") location.assign("/?host=1");
+      else this.showAdminDashboard();
+    } else this.showAuthModal();
+  }
+  showAdminDashboard() {
+    const dashboard = document.getElementById("adminDashboard");
+    if (!dashboard) return;
+    dashboard.style.display = "block";
+    document.querySelector(".grid-container").style.display = "none";
+    document.querySelector(".footer").style.display = "none";
+    this.fetchUserGames();
+  }
+  hideAdminDashboard() {
+    const dashboard = document.getElementById("adminDashboard");
+    if (dashboard) dashboard.style.display = "none";
+    const grid = document.querySelector(".grid-container");
+    if (grid) grid.style.display = "block";
+    const footer = document.querySelector(".footer");
+    if (footer) footer.style.display = "block";
+  }
+  async fetchUserGames() {
+    const list = document.getElementById("gamesList"),
+      empty = document.getElementById("emptyState"),
+      state = document.getElementById("gamesState");
+    if (!list) return;
+    list.replaceChildren();
+    empty.style.display = "none";
+    state.replaceChildren(node("p", "Loading your games…"));
+    state.setAttribute("role", "status");
+    try {
+      const response = await fetch(`${this.config.API_BASE_URL}/games`, {
+        cache: "no-store",
+      });
+      if (!response.ok)
+        throw new Error(
+          response.status === 401
+            ? "Your session expired. Sign in again; your games are retained."
+            : "Could not load your games. Please retry.",
+        );
+      const games = await response.json();
+      state.replaceChildren();
+      this.renderGamesList(games);
+    } catch (cause) {
+      state.replaceChildren(node("p", cause.message));
+      const retry = node("button", "Retry", "btn btn-outline");
+      retry.onclick = () => this.fetchUserGames();
+      const login = node("button", "Sign in", "btn btn-outline");
+      login.onclick = () => this.showAuthModal();
+      state.append(retry, login);
     }
-
-    showAdminDashboard() {
-        // Hide main game interface
-        const gridContainer = document.querySelector('.grid-container');
-        const footer = document.querySelector('.footer');
-
-        if (gridContainer) gridContainer.style.display = 'none';
-        if (footer) footer.style.display = 'none';
-
-        // Show admin dashboard
-        const adminDashboard = document.getElementById('adminDashboard');
-        if (adminDashboard) {
-            adminDashboard.style.display = 'block';
-            this.fetchUserGames();
-        }
+  }
+  renderGamesList(games) {
+    const list = document.getElementById("gamesList"),
+      empty = document.getElementById("emptyState");
+    list.replaceChildren();
+    list.style.display = games.length ? "grid" : "none";
+    empty.style.display = games.length ? "none" : "block";
+    for (const game of games) {
+      const card = node("article", undefined, "game-card");
+      card.append(
+        node("h3", game.name),
+        node(
+          "p",
+          `${game.gridSize} × ${game.gridSize} · ${new Date(game.updatedAt).toLocaleDateString()}`,
+          "game-meta",
+        ),
+      );
+      const actions = node("div", undefined, "game-actions");
+      const preview = node("a", "Preview", "btn btn-sm btn-outline");
+      preview.href = `/play/${encodeURIComponent(game.id)}?preview=1`;
+      actions.append(preview);
+      for (const [label, fn, style] of [
+        ["Share", () => this.shareGame(game), "outline"],
+        ["Results", () => this.showGameResults(game.id, game.name), "outline"],
+        ["Delete", () => this.deleteGame(game.id), "danger"],
+      ]) {
+        const b = node("button", label, `btn btn-sm btn-${style}`);
+        b.type = "button";
+        b.onclick = fn;
+        actions.append(b);
+      }
+      card.append(actions);
+      list.append(card);
     }
-
-    async fetchUserGames() {
-        try {
-            const response = await fetch(`${CONFIG.API_BASE_URL}/games`, {
-                headers: this.getAuthHeaders()
-            });
-
-            if (response.ok) {
-                const games = await response.json();
-                this.renderGamesList(games);
-            }
-        } catch (error) {
-            console.error('Failed to fetch games:', error);
-        }
+  }
+  shareGame(game) {
+    const d = node("dialog", undefined, "host-dialog");
+    d.setAttribute("aria-label", "Share game");
+    d.append(
+      node("h2", `Share ${game.name}`),
+      node("p", "Anyone with this link can play without signing in."),
+    );
+    const input = node("input");
+    input.value = `${location.origin}/play/${encodeURIComponent(game.id)}`;
+    input.readOnly = true;
+    input.setAttribute("aria-label", "Game link");
+    d.append(input);
+    const copy = node("button", "Copy link", "btn btn-primary");
+    copy.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(input.value);
+        copy.textContent = "Copied";
+      } catch {
+        input.select();
+        copy.textContent = "Select and copy the link";
+      }
+    };
+    const close = node("button", "Close", "btn btn-secondary");
+    close.onclick = () => {
+      d.close();
+      d.remove();
+    };
+    d.append(copy, close);
+    document.body.append(d);
+    d.showModal();
+  }
+  async showGameResults(id, name) {
+    const response = await fetch(
+      `${this.config.API_BASE_URL}/games/${encodeURIComponent(id)}/results`,
+    );
+    if (!response.ok) {
+      this.showError("Could not load results. Retry or sign in again.");
+      return;
     }
-
-    renderGamesList(games) {
-        const gamesList = document.getElementById('gamesList');
-        const emptyState = document.getElementById('emptyState');
-
-        if (!gamesList || !emptyState) return;
-
-        if (games.length === 0) {
-            gamesList.style.display = 'none';
-            emptyState.style.display = 'block';
-            return;
-        }
-
-        emptyState.style.display = 'none';
-        gamesList.style.display = 'grid';
-        gamesList.innerHTML = '';
-
-        games.forEach(game => {
-            const card = document.createElement('div');
-            card.className = 'game-card';
-
-            const date = new Date(game.updatedAt).toLocaleDateString();
-            const shareUrl = `${window.location.origin}/play/${game.id}`;
-
-            card.innerHTML = `
-                <h3>${game.name}</h3>
-                <p class="game-meta">Updated: ${date}</p>
-                <div class="game-actions">
-                    <a href="${shareUrl}" class="btn btn-sm btn-primary">Play</a>
-                    <button type="button" class="btn btn-sm btn-outline" onclick="event.preventDefault(); navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied!'))">Share</button>
-                    <button type="button" class="btn btn-sm btn-outline" onclick="event.preventDefault(); window.bingoApp.authManager.showGameResults('${game.id}', '${game.name}')">Results</button>
-                    <button type="button" class="btn btn-sm btn-danger" onclick="event.preventDefault(); window.bingoApp.authManager.deleteGame('${game.id}')">Delete</button>
-                </div>
-            `;
-            gamesList.appendChild(card);
-        });
+    this.renderResultsModal(name, await response.json());
+  }
+  renderResultsModal(name, sessions) {
+    const d = node("dialog", undefined, "host-dialog");
+    d.setAttribute("aria-label", "Game results");
+    d.append(node("h2", `Results: ${name}`));
+    if (!sessions.length)
+      d.append(
+        node("p", "No players yet. Share your game link to invite them."),
+      );
+    const table = node("table");
+    const head = node("tr");
+    for (const title of ["Player", "Status", "First bingo"])
+      head.append(node("th", title));
+    table.append(head);
+    for (const session of sessions) {
+      const row = node("tr");
+      for (const value of [
+        session.playerName || "Anonymous",
+        session.isCompleted ? "Bingo" : "Playing",
+        session.completedAt
+          ? new Date(session.completedAt).toLocaleString()
+          : "—",
+      ])
+        row.append(node("td", value));
+      table.append(row);
     }
-
-    async showGameResults(gameId, gameName) {
-        try {
-            const response = await fetch(`${CONFIG.API_BASE_URL}/games/${gameId}/results`, {
-                headers: this.getAuthHeaders()
-            });
-
-            if (response.ok) {
-                const sessions = await response.json();
-                this.renderResultsModal(gameName, sessions);
-            } else {
-                alert('Failed to fetch results');
-            }
-        } catch (error) {
-            console.error('Error fetching results:', error);
-            alert('Error fetching results');
-        }
+    d.append(table);
+    const close = node("button", "Close", "btn btn-secondary");
+    close.onclick = () => {
+      d.close();
+      d.remove();
+    };
+    d.append(close);
+    document.body.append(d);
+    d.showModal();
+  }
+  async deleteGame(id) {
+    if (!confirm("Delete this game and its results?")) return;
+    const r = await fetch(
+      `${this.config.API_BASE_URL}/games/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
+    if (r.ok) this.fetchUserGames();
+    else this.showError("Could not delete the game. Retry or sign in again.");
+  }
+  showError(message) {
+    const status = document.getElementById("status");
+    if (status) {
+      status.textContent = message;
+      status.className = "status error";
+      status.style.display = "block";
+      status.setAttribute("role", "alert");
     }
-
-    renderResultsModal(gameName, sessions) {
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.style.display = 'block';
-        modal.style.zIndex = '2000';
-
-        let content = `
-            <div class="modal-content" style="max-width: 600px;">
-                <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                <h2>Results: ${gameName}</h2>
-                <div class="results-list" style="max-height: 400px; overflow-y: auto; margin-top: 20px;">
-        `;
-
-        if (sessions.length === 0) {
-            content += '<p>No players yet.</p>';
-        } else {
-            content += `
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid #eee; text-align: left;">
-                            <th style="padding: 10px;">Player</th>
-                            <th style="padding: 10px;">Status</th>
-                            <th style="padding: 10px;">Completed At</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            sessions.forEach(session => {
-                const completed = session.isCompleted ? '✅ Completed' : 'Playing';
-                const time = session.completedAt ? new Date(session.completedAt).toLocaleString() : '-';
-                content += `
-                    <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 10px;">${session.playerName || 'Anonymous'}</td>
-                        <td style="padding: 10px;">${completed}</td>
-                        <td style="padding: 10px;">${time}</td>
-                    </tr>
-                `;
-            });
-
-            content += `
-                    </tbody>
-                </table>
-            `;
-        }
-
-        content += `
-                </div>
-                <div style="margin-top: 20px; text-align: right;">
-                    <button class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Close</button>
-                </div>
-            </div>
-        `;
-
-        modal.innerHTML = content;
-        document.body.appendChild(modal);
-    }
-
-    async deleteGame(gameId) {
-        if (!confirm('Are you sure you want to delete this game?')) return;
-
-        try {
-            const response = await fetch(`${CONFIG.API_BASE_URL}/games/${gameId}`, {
-                method: 'DELETE',
-                headers: this.getAuthHeaders()
-            });
-
-            if (response.ok) {
-                this.fetchUserGames();
-            } else {
-                alert('Failed to delete game');
-            }
-        } catch (error) {
-            console.error('Error deleting game:', error);
-            alert('Error deleting game');
-        }
-    }
-
-    hideAdminDashboard() {
-        // Show main game interface
-        const gridContainer = document.querySelector('.grid-container');
-        const footer = document.querySelector('.footer');
-
-        if (gridContainer) gridContainer.style.display = 'block';
-        if (footer) footer.style.display = 'block';
-
-        // Hide admin dashboard
-        const adminDashboard = document.getElementById('adminDashboard');
-        if (adminDashboard) {
-            adminDashboard.style.display = 'none';
-        }
-    }
-
-    showError(message) {
-        const status = document.getElementById('status');
-        if (status) {
-            status.textContent = message;
-            status.className = 'status error';
-            status.style.display = 'block';
-
-            setTimeout(() => {
-                status.style.display = 'none';
-            }, 5000);
-        }
-    }
-
-    // Public methods for app integration
-    getUser() {
-        return this.user;
-    }
-
-    isLoggedIn() {
-        return this.isAuthenticated;
-    }
-
-    getAuthHeaders() {
-        if (this.isAuthenticated && this.user?.token) {
-            return {
-                'Authorization': `Bearer ${this.user.token}`
-            };
-        }
-        return {};
-    }
+  }
+  getUser() {
+    return this.user;
+  }
+  isLoggedIn() {
+    return this.isAuthenticated;
+  }
+  getAuthHeaders() {
+    return {};
+  }
 }
