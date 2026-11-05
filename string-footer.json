@@ -1,0 +1,15 @@
+{
+  "version": "1.1.0",
+  "source": "https://github.com/String-sg/string-footer",
+  "sha256": "23597b1a31bfa71da0736d62417554b0e23fc2a952ab4639e5c21782cc5cd640",
+  "product": "bingo",
+  "variant": "compact",
+  "credits": [
+    {
+      "label": "Created by",
+      "name": "Seng Kwang",
+      "creation": "bingo",
+      "url": "https://id.string.sg/u/sengkwang"
+    }
+  ]
+}
