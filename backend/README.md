@@ -83,6 +83,8 @@ For the separately approved production repair:
 1. Confirm the intended Bingo database, take a restorable backup, and refresh
    migration status plus aggregate user/game and unmatched-owner counts. The
    initial read-only baseline was 12 users, 9 games and zero unmatched owners.
+   Use Neon's direct connection for backup/migration commands; retain the runtime
+   pooled connection unchanged.
 2. Confirm only the two migrations above are pending. Review their existing SQL,
    then run `npx prisma migrate deploy --schema backend/prisma/schema.prisma`
    against that database. Do not use `migrate dev`, reset or an automatic build

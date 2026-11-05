@@ -2,7 +2,7 @@
 
 **Feature Branch**: `codex/fix-host-auth-schema-check`
 **Created**: 2026-11-05
-**Status**: Ready for implementation
+**Status**: Implementation validated; production repair awaiting separate approval
 **Input**: Fix the unavailable host account check on bingo.string.sg; use Ponytail and Spec Kit.
 
 ## User Scenarios & Testing

@@ -18,8 +18,8 @@ Before production: obtain separate approval, take a restorable backup, refresh m
 - Backend typecheck and API startup passed. All 8 backend tests passed, including legacy linking, phone-only hosting, cookie filtering, Origin and cross-owner rejection, atomic shared counters and HTTP 429.
 - All 38 desktop/mobile browser tests passed, including create/share/guest play, draft retention, session expiry and photo isolation. Identity alone was mocked; HTTP and local PostgreSQL were real.
 - Local runtime reports Node 25.9.0; CI remains configured for the supported Node 22 line. The named local node@22 path also resolved to Node 25, so no local Node 22 claim is made.
-- The first Node 22 CI run passed migrations, guarded build, typecheck, startup and all 8 backend tests. Browser installation exposed runner drift to unsupported Ubuntu 26.04; the workflow now pins Ubuntu 24.04, supported by locked Playwright 1.56.0.
-- Vercel preview reached `check:db` and stopped with P1001 because its build worker could not reach Neon. No successful preview deployment is claimed; this remains a release prerequisite alongside the missing production migrations.
+- Node 22 CI run [41942038115](https://github.com/String-sg/bingo-string/actions/runs/41942038115) passed migrations, guarded build, typecheck, startup, all 8 backend tests and all 38 desktop/mobile browser tests. The workflow pins Ubuntu 24.04, supported by locked Playwright 1.56.0.
+- The [latest Vercel preview](https://vercel.com/ogp-string/bingo-string/9MtXwyWkcfgeGY9pUXhKunzQQ8Ng) reached Neon and correctly stopped on exactly the two pending auth migrations. An earlier attempt had a P1001 connection failure. No successful preview deployment is claimed before those migrations are applied.
 - Spec Kit prerequisites passed, the 7-item spec checklist passed, and all 6 functional requirements map to the 8 completed implementation tasks. No consistency or constitution issues found. No extension hooks are configured.
 
 Production was inspected read-only. No production migration, account mapping, merge or deployment has been performed. A live signed-in pilot remains pending approval and real account access.
