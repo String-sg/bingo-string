@@ -78,6 +78,13 @@ uses that same command. Pending/failed migrations, absent configuration or an
 unreachable database stop deployment. This checks migration history, not manual
 schema drift. `npm run build` remains available for local frontend-only work.
 
+Standing rule: nothing in the pipeline applies migrations. Apply each new
+migration to production (with approval, using `migrate deploy` over the direct
+connection) before merging the PR that adds it, or the production build stops.
+Migrations must stay additive so the running code tolerates the new schema.
+While Preview shares the production `DATABASE_URL`, previews of a migration PR
+fail at this check until that migration is applied.
+
 For the separately approved production repair:
 
 1. Confirm the intended Bingo database, take a restorable backup, and refresh
