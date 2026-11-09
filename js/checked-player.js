@@ -2,6 +2,13 @@ import { button, checkedRequest, el, panel, singaporeTime, statusText } from "./
 
 const liveKey = "bingo:live-player";
 const joinKey = "bingo:join-token";
+function scannedPin() {
+  const pin = new URLSearchParams(location.hash.slice(1)).get("pin");
+  return /^[0-9]{6}$/.test(pin || "") ? pin : "";
+}
+function clearScannedPin() {
+  if (scannedPin()) history.replaceState(null, "", location.pathname + location.search);
+}
 function read(key) {
   try { return JSON.parse(localStorage.getItem(key) || "null"); }
   catch { return null; }
@@ -36,7 +43,16 @@ export class CheckedPlayer {
     if (this.live) {
       document.querySelector(".host-header nav").hidden = true;
       const previous = read(liveKey);
+      this.linkPin = scannedPin();
+      window.addEventListener("hashchange", () => {
+        if (scannedPin()) location.reload();
+      });
+      if (this.linkPin && previous?.pin !== this.linkPin) {
+        if (previous?.id && !previous.pin) this.token = previous.token;
+        return this.joinForm();
+      }
       if (!previous?.id || !previous.token) return this.joinForm();
+      clearScannedPin();
       this.path = "/rounds/" + encodeURIComponent(previous.id);
       this.token = previous.token;
       this.app.gameId = "live-" + previous.id;
@@ -58,6 +74,7 @@ export class CheckedPlayer {
     pin.maxLength = 6;
     pin.required = this.live;
     pin.autocomplete = "off";
+    pin.value = this.linkPin || "";
     const nickname = el("input");
     nickname.maxLength = 40;
     nickname.required = true;
@@ -75,14 +92,16 @@ export class CheckedPlayer {
       join.disabled = true;
       this.token ||= read(joinKey + (this.key || "")) || crypto.randomUUID();
       save(joinKey + (this.key || ""), this.token);
+      const enteredPin = pin.value;
       try {
         const data = await checkedRequest(this.live ? "/join" : this.path + "/join", {
-          token: this.token, data: { nickname: nickname.value, ...(this.live ? { pin: pin.value } : {}) },
+          token: this.token, data: { nickname: nickname.value, ...(this.live ? { pin: enteredPin } : {}) },
         });
         if (this.live) {
           this.path = "/rounds/" + encodeURIComponent(data.roundId);
           this.app.gameId = "live-" + data.roundId;
-          save(liveKey, { id: data.roundId, token: this.token });
+          save(liveKey, { id: data.roundId, token: this.token, pin: enteredPin });
+          clearScannedPin();
         } else save(this.key, this.token);
         save(joinKey + (this.key || ""), null);
         this.app.sessionId = this.token;

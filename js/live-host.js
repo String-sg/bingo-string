@@ -1,3 +1,4 @@
+import { renderSVG } from "uqr";
 import { button, checkedRequest, el, panel, singaporeTime, statusText } from "./checked-ui.js";
 
 const modeLabel = { photo: "Photo (on player’s device)", typed: "Typed answer", manual: "Host check", free: "Free centre" };
@@ -47,6 +48,13 @@ export async function openLobby(id, auth) {
   join.append(studentLink());
   const pin = el("p", "", "live-pin");
   pin.setAttribute("aria-label", "Game PIN");
+  const scan = el("a", undefined, "live-qr");
+  const code = el("img");
+  code.alt = "";
+  code.width = code.height = 176;
+  scan.hidden = true;
+  scan.append(code, el("span", "Scan to join"));
+  let shownPin;
   const roster = el("ul", undefined, "live-roster");
   const count = statusText("Loading players…");
   const status = statusText();
@@ -56,7 +64,7 @@ export async function openLobby(id, auth) {
   const results = button("Private results", () => showCheckedResults(path, title.textContent), "btn btn-outline");
   actions.append(start, end, results);
   actions.hidden = true;
-  container.append(title, join, pin, count, roster, actions, status);
+  container.append(title, join, pin, scan, count, roster, actions, status);
   let controlBusy = false;
   let ended = false;
   let lastRoster = "";
@@ -72,7 +80,14 @@ export async function openLobby(id, auth) {
     }
     ended = data.status === "ended";
     actions.hidden = false;
-    join.hidden = pin.hidden = ended;
+    if (!ended && shownPin !== data.pin) {
+      const destination = new URL("/join", location.origin);
+      destination.hash = "pin=" + data.pin;
+      scan.href = destination.href;
+      code.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(renderSVG(destination.href, { border: 4 }));
+      shownPin = data.pin;
+    }
+    join.hidden = pin.hidden = scan.hidden = ended;
     start.hidden = data.status !== "waiting";
     end.hidden = ended;
     status.textContent = ended ? "Session ended" : data.status === "playing" ? "Playing" : "Waiting for players";
