@@ -32,6 +32,24 @@ export class AuthManager {
     document
       .getElementById("backToGameBtn")
       ?.addEventListener("click", () => this.hideAdminDashboard());
+    const account = document.querySelector(".host-account");
+    if (account) {
+      const summary = account.querySelector("summary");
+      document.addEventListener("click", (event) => {
+        if (!account.open) return;
+        if (!account.contains(event.target)) account.open = false;
+        else if (event.target.closest("button")) {
+          account.open = false;
+          summary.focus();
+        }
+      });
+      account.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape" || !account.open) return;
+        event.preventDefault();
+        account.open = false;
+        summary.focus();
+      });
+    }
     this.ready = this.refresh();
   }
   init() {
@@ -87,11 +105,12 @@ export class AuthManager {
   }
   updateUI() {
     const identity = document.getElementById("hostIdentity");
-    if (identity) identity.hidden = !this.user;
+    if (identity) {
+      identity.hidden = !this.user;
+      if (!this.user) identity.open = false;
+    }
     const name = document.getElementById("hostName");
     if (name) name.textContent = this.user?.name || "String member";
-    const myGames = document.getElementById("myGamesBtn");
-    if (myGames) myGames.hidden = !this.user;
   }
   async beginHost() {
     await this.ready;
@@ -183,6 +202,7 @@ export class AuthManager {
       "Signed out of String ID on this browser, including other String apps.",
     );
     if (location.pathname.includes("new.html")) location.reload();
+    else document.getElementById("hostGameBtn")?.focus();
   }
   async redirectToAdmin() {
     await this.ready;

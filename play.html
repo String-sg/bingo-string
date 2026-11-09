@@ -15,9 +15,16 @@
 <body class="board-page">
     <header class="host-header">
       <a href="/" class="brand">String Bingo</a>
-      <nav aria-label="Host navigation"><button type="button" class="btn btn-outline" id="myGamesBtn" hidden>My games</button>
-      <button type="button" class="btn btn-primary" id="hostGameBtn">Host a game</button>
-      <span id="hostIdentity" hidden><span id="hostName"></span> <button type="button" class="btn btn-outline" id="stringLogoutBtn">Sign out of String ID</button></span></nav>
+      <nav aria-label="Host navigation">
+        <button type="button" class="btn btn-primary" id="hostGameBtn">Host a game</button>
+        <details class="host-account" id="hostIdentity" hidden>
+          <summary><span id="hostName"></span></summary>
+          <div class="host-account-actions">
+            <button type="button" id="myGamesBtn">My games</button>
+            <button type="button" id="stringLogoutBtn">Sign out of String ID</button>
+          </div>
+        </details>
+      </nav>
     </header>
 
     <main aria-label="Bingo board">

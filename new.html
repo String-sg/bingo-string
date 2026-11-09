@@ -12,14 +12,13 @@
     <header class="host-header">
       <a href="/" class="brand">String Bingo</a>
       <nav aria-label="Host navigation">
-        <button id="myGamesBtn" type="button" class="btn btn-outline" hidden>
-          My games</button
-        ><span id="hostIdentity" hidden
-          ><span id="hostName"></span>
-          <button type="button" id="stringLogoutBtn" class="btn btn-outline">
-            Sign out of String ID
-          </button></span
-        >
+        <details class="host-account" id="hostIdentity" hidden>
+          <summary><span id="hostName"></span></summary>
+          <div class="host-account-actions">
+            <button type="button" id="myGamesBtn">My games</button>
+            <button type="button" id="stringLogoutBtn">Sign out of String ID</button>
+          </div>
+        </details>
       </nav>
     </header>
     <main class="host-shell">

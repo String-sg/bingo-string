@@ -17,6 +17,7 @@
   gap: 0.6rem;
   flex-wrap: wrap;
   align-items: center;
+  margin-inline-start: auto;
 }
 .brand {
   font-family: var(--font-title);
@@ -212,6 +213,9 @@ textarea:focus-visible {
   .host-header {
     padding: 1rem;
   }
+  .board-page #hostGameBtn {
+    padding-inline: 0.8rem;
+  }
   .host-shell {
     margin-top: 1.5rem;
   }
@@ -244,10 +248,68 @@ textarea:focus-visible {
   font-size: 0.85rem;
   text-align: center;
 }
-#hostIdentity {
-  display: inline-flex;
+.host-account {
+  position: relative;
+  font-size: 0.875rem;
+}
+.host-account summary {
+  display: flex;
   align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-  font-size: 0.85rem;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding: 0 0.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+.host-account summary::-webkit-details-marker { display: none; }
+.host-account summary::after {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid;
+  border-bottom: 2px solid;
+  transform: translateY(-25%) rotate(45deg);
+}
+.host-account summary:focus-visible {
+  outline: 3px solid #206d55;
+  outline-offset: 2px;
+}
+.board-page .host-account summary:focus-visible { outline-color: var(--primary-color); }
+#hostName {
+  max-width: clamp(5.5rem, 18vw, 9rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.host-account-actions {
+  position: absolute;
+  z-index: 110;
+  inset: calc(100% + 0.35rem) 0 auto auto;
+  min-width: max-content;
+  padding: 0.3rem;
+  border: 1px solid #bbc7b9;
+  border-radius: 10px;
+  background: #fff;
+  color: #20352d;
+  box-shadow: var(--shadow-medium);
+}
+.host-account-actions button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.host-account-actions button:hover { background: #edf8ef; }
+.board-page .host-account-actions button:focus-visible {
+  outline: 2px solid #206d55;
+  outline-offset: -2px;
 }
