@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import checkedRoutes from './routes/checked';
+import { bingoOrigin } from './middleware/auth';
 
 // Load environment variables
 dotenv.config();
@@ -25,7 +27,7 @@ const corsOptions = {
     // Allow requests with no origin (mobile apps, etc.)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) {
+    if (origin === bingoOrigin() || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(Object.assign(new Error('Not allowed by CORS'), { status: 403 }));
@@ -33,7 +35,7 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Bingo-Player'],
 };
 
 app.use(cors(corsOptions));
@@ -62,6 +64,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/games', require('./routes/games'));
+app.use('/api/checked', checkedRoutes);
 app.use('/api/default-sessions', require('./routes/defaultSessions'));
 
 // 404 handler

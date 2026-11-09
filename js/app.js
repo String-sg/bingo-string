@@ -5,6 +5,8 @@ import { TouchManager } from './touchManager.js';
 import { ModalManager } from './modalManager.js';
 import { AuthManager } from './authManager.js';
 import { CONFIG, getConfig } from './config.js';
+import { CheckedPlayer } from './checked-player.js';
+import { openDemo, openLobby } from './live-host.js';
 
 class BingoApp {
     constructor() {
@@ -13,7 +15,7 @@ class BingoApp {
         this.cameraManager = new CameraManager();
         this.touchManager = null;
         this.modalManager = new ModalManager(this.cameraManager);
-        this.authManager = new AuthManager();
+        this.authManager = location.pathname === "/join" ? null : new AuthManager();
         this.sessionId = null;
         this.gameId = null;
         this.playerName = null;
@@ -28,6 +30,16 @@ class BingoApp {
             const config = await getConfig();
             console.log('🔧 Configuration loaded:', config);
             console.log('🔧 Google Client ID from config:', config.GOOGLE_CLIENT_ID);
+
+            if (location.pathname === "/join") {
+                this.checked = new CheckedPlayer(this);
+                await this.checked.connect();
+                return;
+            }
+            const lobby = location.pathname.match(/^\/host\/live\/([a-z0-9]+)$/);
+            if (lobby) return await openLobby(lobby[1], this.authManager);
+            if (location.pathname === "/play" && !new URLSearchParams(location.search).has("host") &&
+                await openDemo(this.authManager)) return;
 
             // Check for custom game URL: /play/{uuid}
             const pathParts = window.location.pathname.split('/').filter(p => p);
@@ -47,8 +59,8 @@ class BingoApp {
             if (this.gameUnavailable) { const actions=document.querySelector('.footer .button-row');if(actions)actions.hidden=true;return; }
             this.setupEventListeners();
             if (!this.gameUnavailable) this.setupTouchManager();
-            if (!this.gameUnavailable) this.loadCellImages(); // Load only this game/session
-            this.setupAnalytics(); // Initialize Google Analytics
+            if (!this.gameUnavailable) this.loadCellImages(!this.checked);
+            if (!this.checked) this.setupAnalytics();
         } catch (error) {
             console.error('Failed to initialize app:', error);
             this.showError('Failed to load the game. Please refresh the page.');
@@ -118,7 +130,12 @@ class BingoApp {
             await this.setupGrid(game.challengesJson, game.gridSize || 5);
 
             // Initialize session
-            if (!new URLSearchParams(location.search).has('preview')) this.initializeSession();
+            if (!new URLSearchParams(location.search).has('preview')) {
+                if (game.checked) {
+                    this.checked = new CheckedPlayer(this, gameId);
+                    await this.checked.connect();
+                } else this.initializeSession();
+            }
             else { const hint=document.createElement('p');hint.textContent='Board preview — no player entry is recorded.';document.querySelector('.footer')?.prepend(hint); }
 
         } catch (error) {
@@ -235,6 +252,12 @@ class BingoApp {
 
     handleCellClick(index) {
         if (!this.bingoGrid || (this.gameId && !this.sessionId)) return;
+        const tile = this.bingoGrid.challenges[index];
+        if (this.checked) {
+            if (!this.checked.playing || this.checked.pending) return;
+            if (tile.mode === "typed" || tile.mode === "manual")
+                return this.checked.openTile(index, tile);
+        }
         const cell = this.bingoGrid.cells[index];
         const isCompleted = cell.classList.contains('completed');
 
@@ -252,6 +275,15 @@ class BingoApp {
         const imageData = this.modalManager.getCurrentImageData();
 
         if (cellIndex !== null && imageData) {
+            if (this.checked) {
+                if (!this.checked.playing || this.checked.pending) return;
+                try { this.storeCellImage(cellIndex, imageData); }
+                catch { this.checked.status.textContent = "Could not save this photo on your device."; return; }
+                this.modalManager.closeModal();
+                this.modalManager.clearCurrentData();
+                this.checked.send("photo", cellIndex);
+                return;
+            }
             // Mark cell as completed
             this.bingoGrid.setCellCompleted(cellIndex);
 
@@ -471,7 +503,7 @@ class BingoApp {
         }
     }
 
-    loadCellImages() {
+    loadCellImages(restoreProgress = true) {
         const cellImages = JSON.parse(localStorage.getItem(this.photoStorageKey()) || '{}');
         if (!this.bingoGrid) return;
         Object.entries(cellImages).forEach(([index, imageData]) => {
@@ -483,12 +515,14 @@ class BingoApp {
                 cell.style.backgroundSize = 'cover';
                 cell.style.backgroundPosition = 'center';
                 cell.classList.add('has-image');
-                this.bingoGrid.completedCells.add(cellIndex);
-                cell.classList.add('completed');
-                cell.setAttribute('aria-pressed','true');
+                if (restoreProgress) {
+                    this.bingoGrid.completedCells.add(cellIndex);
+                    cell.classList.add('completed');
+                    cell.setAttribute('aria-pressed','true');
+                }
             }
         });
-        this.bingoGrid.checkForBingo();
+        if (restoreProgress) this.bingoGrid.checkForBingo();
     }
 
     showPhotoModal(cellIndex) {
@@ -525,6 +559,7 @@ class BingoApp {
     }
 
     removeCellImage(cellIndex) {
+        if (this.checked && (!this.checked.playing || this.checked.pending)) return;
         // Remove from localStorage
         const cellImages = JSON.parse(localStorage.getItem(this.photoStorageKey()) || '{}');
         delete cellImages[cellIndex];
@@ -542,7 +577,8 @@ class BingoApp {
 
         // Close modal
         document.querySelector('[aria-label="Challenge photo"]')?.remove();
-        this.updateSessionProgress();
+        if (this.checked) this.checked.send("remove", cellIndex);
+        else this.updateSessionProgress();
         this.bingoGrid.cells[cellIndex]?.focus();
     }
 
@@ -552,12 +588,14 @@ class BingoApp {
     }
 
     reset() {
+        if (!this.bingoGrid || this.checked && (!this.checked.playing || this.checked.pending)) return;
         // Clear localStorage
         localStorage.removeItem(this.photoStorageKey());
 
         // Reset grid
         this.bingoGrid.reset();
-        this.updateSessionProgress();
+        if (this.checked) this.checked.send("reset");
+        else this.updateSessionProgress();
 
         // Reset touch manager
         if (this.touchManager) {

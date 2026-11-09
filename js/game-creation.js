@@ -11,6 +11,8 @@ class GameCreationApp {
       name: "",
       size: 3,
       prompts: Array(24).fill(""),
+      modes: Array(24).fill("photo"),
+      aliases: Array(24).fill(""),
       createKey: crypto.randomUUID(),
     };
     this.init();
@@ -22,6 +24,10 @@ class GameCreationApp {
         this.draft = {
           ...this.draft,
           ...saved,
+          modes: Array.from({ length: 24 }, (_, i) =>
+            ["typed", "manual"].includes(saved.modes?.[i]) ? saved.modes[i] : "photo",
+          ),
+          aliases: Array.from({ length: 24 }, (_, i) => String(saved.aliases?.[i] || "").slice(0, 3300)),
           prompts: Array.from({ length: 24 }, (_, i) =>
             String(saved.prompts[i] || "").slice(0, 100),
           ),
@@ -87,7 +93,11 @@ class GameCreationApp {
           throw new Error(
             `This board needs exactly ${needed} prompts; the CSV contains ${values.length}.`,
           );
-        values.forEach((v, i) => (this.draft.prompts[i] = v));
+        values.forEach((v, i) => {
+          this.draft.prompts[i] = v;
+          this.draft.modes[i] = "photo";
+          this.draft.aliases[i] = "";
+        });
         this.renderPrompts();
         this.save();
         this.error("");
@@ -151,7 +161,31 @@ class GameCreationApp {
         this.save();
       };
       label.append(input);
-      list.append(label);
+      const mode = document.createElement("select");
+      mode.setAttribute("aria-label", `Mode for challenge ${i + 1}`);
+      for (const [value, name] of [["photo", "Photo"], ["typed", "Typed answer"], ["manual", "Host check"]])
+        mode.add(new Option(name, value));
+      mode.value = this.draft.modes[i];
+      const answers = document.createElement("textarea");
+      answers.rows = 3;
+      answers.maxLength = 3300;
+      answers.placeholder = "One accepted answer or alias per line";
+      answers.setAttribute("aria-label", `Accepted answers for challenge ${i + 1}`);
+      answers.value = this.draft.aliases[i];
+      answers.hidden = mode.value !== "typed";
+      answers.oninput = () => {
+        this.draft.aliases[i] = answers.value;
+        this.save();
+      };
+      mode.onchange = () => {
+        this.draft.modes[i] = mode.value;
+        answers.hidden = mode.value !== "typed";
+        this.save();
+      };
+      const tile = document.createElement("div");
+      tile.className = "editor-tile";
+      tile.append(label, mode, answers);
+      list.append(tile);
     }
     this.updateCount();
   }
@@ -179,15 +213,29 @@ class GameCreationApp {
         return false;
       }
     }
+    if (this.step >= 1) {
+      const badKey = this.challenges().findIndex(({ mode, aliases }) =>
+        mode === "typed" && (!aliases.length || aliases.length > 20 || aliases.some((value) => value.length > 160)),
+      );
+      if (badKey >= 0) {
+        this.error(`Enter 1 to 20 accepted answers of up to 160 characters for tile ${badKey + 1}.`);
+        return false;
+      }
+    }
     this.error("");
     return true;
   }
   challenges() {
-    const prompts = this.draft.prompts
-      .slice(0, this.count())
-      .map((v) => v.trim());
-    if (this.draft.size === 5) prompts.splice(12, 0, "FREE");
-    return prompts.map((text, i) => ({ id: `q${i}`, text }));
+    const tiles = this.draft.prompts.slice(0, this.count()).map((text, index) => {
+      const mode = this.draft.modes[index];
+      return {
+        text: text.trim(),
+        mode,
+        ...(mode === "typed" ? { aliases: this.draft.aliases[index].split(/\r?\n/).map((value) => value.trim()).filter(Boolean) } : {}),
+      };
+    });
+    if (this.draft.size === 5) tiles.splice(12, 0, { text: "FREE" });
+    return tiles.map((tile, i) => ({ id: `q${i}`, ...tile }));
   }
   showStep(step) {
     this.step = Math.max(0, Math.min(2, step));
@@ -232,6 +280,7 @@ class GameCreationApp {
           name: this.draft.name.trim(),
           gridSize: this.draft.size,
           challenges: this.challenges(),
+          checked: true,
           isPublic: true,
           createKey: this.draft.createKey,
         }),

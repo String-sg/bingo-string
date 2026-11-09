@@ -3,7 +3,8 @@ import { defineConfig } from 'vite'
 function servePlayBoard(server) {
     server.middlewares.use((req, _res, next) => {
         const { pathname, search } = new URL(req.url, 'http://localhost')
-        if (pathname === '/play' || pathname.startsWith('/play/') ||
+        if (pathname === '/join' || pathname.startsWith('/host/live/') ||
+            pathname === '/play' || pathname.startsWith('/play/') ||
             /^\/[^/]+(?:@|%40)[^/]+\/[^/]+\/?$/i.test(pathname)) {
             req.url = '/play.html' + search
         }

@@ -28,6 +28,7 @@
     </header>
 
     <main aria-label="Bingo board">
+        <section id="livePanel" class="live-panel" hidden></section>
         <div class="grid-container">
             <div class="bingo-grid" id="bingoGrid">
                 <!-- Grid will be populated by JavaScript -->
@@ -83,6 +84,7 @@
         <div class="modal-content">
             <button type="button" class="close" aria-label="Close dialog">&times;</button>
             <h2>🎉 BINGO! 🎉</h2>
+            <p class="bingo-time" id="bingoTime" hidden></p>
             <p>Congratulations! You've completed a line!</p>
             <p>You have completed a line of challenges.</p>
             <button class="btn btn-primary" id="celebrateBtn">🎊 Celebrate!</button>

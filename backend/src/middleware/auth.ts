@@ -19,9 +19,14 @@ class AuthFailure extends Error {
     super(message);
   }
 }
+export function bingoOrigin() {
+  if (process.env.BINGO_APP_ORIGIN) return process.env.BINGO_APP_ORIGIN;
+  if (process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL)
+    return "https://" + process.env.VERCEL_URL;
+  return "https://bingo.string.sg";
+}
 export function trustedOrigin(req: Request, res: Response, next: NextFunction) {
-  const expected = process.env.BINGO_APP_ORIGIN || "https://bingo.string.sg";
-  if (req.get("origin") !== expected)
+  if (req.get("origin") !== bingoOrigin())
     return res.status(403).json({ error: "Untrusted origin" });
   next();
 }
