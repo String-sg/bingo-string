@@ -11,6 +11,50 @@ async function host(context) {
     },
   ]);
 }
+
+test("the account menu keeps host actions reachable on a narrow screen", async ({ page, context }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await host(context);
+  await page.goto("/play");
+  const account = page.locator("#hostIdentity summary");
+  const myGames = page.getByRole("button", { name: "My games" });
+  const signOut = page.getByRole("button", { name: "Sign out of String ID" });
+  await expect(account).toHaveText("Browser host");
+  await expect(account).toBeVisible();
+  await expect(page.getByRole("button", { name: "Host a game" })).toBeVisible();
+  await expect(myGames).toBeHidden();
+  await expect(signOut).toBeHidden();
+
+  await account.focus();
+  await page.keyboard.press("Enter");
+  await expect(myGames).toBeVisible();
+  const panel = await page.locator(".host-account-actions").boundingBox();
+  expect(panel.x).toBeGreaterThanOrEqual(0);
+  expect(panel.x + panel.width).toBeLessThanOrEqual(320);
+  await page.keyboard.press("Tab");
+  await expect(myGames).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(myGames).toBeHidden();
+  await expect(account).toBeFocused();
+  await account.click();
+  await myGames.click();
+  await expect(page.getByRole("heading", { name: "My games" })).toBeVisible();
+  await expect(myGames).toBeHidden();
+
+  await page.goto("/new.html");
+  await expect(page.locator("#wizard")).toBeVisible();
+  await account.click();
+  await myGames.click();
+  await expect(page).toHaveURL("/play?host=1");
+  await expect(page.getByRole("heading", { name: "My games" })).toBeVisible();
+
+  await page.goto("/new.html");
+  await expect(page.locator("#wizard")).toBeVisible();
+  await account.click();
+  await signOut.click();
+  await expect(page.getByRole("button", { name: "Continue with String ID" })).toBeVisible();
+  await expect(account).toBeHidden();
+});
 for (const size of [3, 5])
   test(`host creates ${size}x${size}, shares it, and guest plays without login`, async ({
     page,
