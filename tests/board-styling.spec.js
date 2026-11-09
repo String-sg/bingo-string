@@ -94,4 +94,18 @@ test('the board and editor have one compact String footer with separate game con
     await expect(footer.getByRole('button')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
+
+  // The editor's light page needs a full-width footer and a stable column across wizard steps.
+  const editorFooter = await page.locator('.str-footer').boundingBox();
+  expect(editorFooter.width).toBe(page.viewportSize().width);
+  const shellWidths = await page.evaluate(() => {
+    const width = () => document.querySelector('.host-shell').getBoundingClientRect().width;
+    const steps = [...document.querySelectorAll('#wizard [data-step]')];
+    document.getElementById('wizard').hidden = false;
+    return steps.map(step => {
+      steps.forEach(other => { other.hidden = other !== step; });
+      return width();
+    });
+  });
+  expect(new Set(shellWidths).size).toBe(1);
 });

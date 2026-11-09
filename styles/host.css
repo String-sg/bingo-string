@@ -46,6 +46,9 @@
   color: #20352d;
   display: flex;
   flex-direction: column;
+  /* Override main.css's 800px body so the header and String footer span the viewport. */
+  max-width: none;
+  margin: 0;
   padding: 0;
 }
 .host-shell :is(h1, h2, h3),
@@ -53,6 +56,8 @@
   font-family: var(--font-title);
 }
 .host-shell {
+  /* Fill the flex column; auto margins alone would shrink it to each step's content. */
+  width: 100%;
   max-width: 900px;
   margin: 2.5rem auto;
   padding: 0 1.25rem 3rem;
