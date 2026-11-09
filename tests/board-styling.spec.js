@@ -2,9 +2,8 @@ import { test, expect } from '@playwright/test';
 
 async function expectReadable(labels) {
   const contrasts = await labels.evaluateAll(elements => {
-    const luminance = rgb => {
-      const channels = rgb.match(/[\d.]+/g).map(Number);
-      if (channels.length !== 3) return NaN;
+    const channelsOf = rgb => rgb.match(/[\d.]+/g).map(Number);
+    const luminance = channels => {
       const [r, g, b] = channels.map(channel => {
         const value = channel / 255;
         return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
@@ -15,10 +14,12 @@ async function expectReadable(labels) {
       const { color, backgroundColor } = getComputedStyle(el);
       const cellStyle = getComputedStyle(el.closest('.bingo-cell'));
       const transparent = backgroundColor === 'rgba(0, 0, 0, 0)';
-      const surface = transparent && cellStyle.backgroundImage === 'none'
+      const [r, g, b, alpha = 1] = channelsOf(transparent && cellStyle.backgroundImage === 'none'
         ? cellStyle.backgroundColor
-        : backgroundColor;
-      const values = [luminance(color), luminance(surface)];
+        : backgroundColor);
+      // White is the brightest possible photo behind a white label.
+      const surface = [r, g, b].map(channel => channel * alpha + 255 * (1 - alpha));
+      const values = [luminance(channelsOf(color)), luminance(surface)];
       return (Math.max(...values) + 0.05) / (Math.min(...values) + 0.05);
     });
   });
@@ -27,6 +28,9 @@ async function expectReadable(labels) {
 }
 
 test('default board labels stay readable through photo, bingo and reset', async ({ page }) => {
+  await page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = async () => { throw new Error('Camera unavailable in upload test'); };
+  });
   await page.goto('/play');
   const cells = page.locator('.bingo-cell');
   const labels = cells.locator('.cell-number, .cell-text');
@@ -35,16 +39,31 @@ test('default board labels stay readable through photo, bingo and reset', async 
   await expectReadable(labels);
 
   await page.waitForFunction(() => window.bingoApp?.sessionId);
+  for (const [index, color] of ['#fff', '#111'].entries()) {
+    const data = await page.evaluate(color => {
+      const photo = document.createElement('canvas');
+      photo.width = photo.height = 10;
+      const context = photo.getContext('2d');
+      context.fillStyle = color;
+      context.fillRect(0, 0, 10, 10);
+      return photo.toDataURL().split(',')[1];
+    }, color);
+    await cells.nth(index).click();
+    await page.locator('#cameraFileInput').setInputFiles({
+      name: 'photo.png', mimeType: 'image/png', buffer: Buffer.from(data, 'base64'),
+    });
+    await expect(cells.nth(index)).toHaveClass(/has-image/);
+  }
+  await page.reload();
+  const photoLabels = page.locator('.bingo-cell.has-image :is(.cell-number, .cell-text)');
+  await expect(photoLabels).toHaveCount(4);
+  for (const label of await photoLabels.all()) {
+    await expect(label).toHaveCSS('color', 'rgb(255, 255, 255)');
+    await expect(label).toHaveCSS('background-color', /rgba\(0, 0, 0, 0\.\d+\)/);
+  }
   await page.evaluate(() => {
-    const app = window.bingoApp;
-    const photo = document.createElement('canvas');
-    photo.width = photo.height = 10;
-    const context = photo.getContext('2d');
-    context.fillRect(0, 0, 10, 10);
-    app.storeCellImage(0, photo.toDataURL());
-    for (let index = 0; index < 5; index++) app.bingoGrid.setCellCompleted(index);
+    for (let index = 2; index < 5; index++) window.bingoApp.bingoGrid.setCellCompleted(index);
   });
-  await expect(cells.first()).toHaveClass(/has-image/);
   await expect(page.locator('.bingo-line')).toHaveCount(5);
   await expectReadable(labels);
 
