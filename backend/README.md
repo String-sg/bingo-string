@@ -1,7 +1,8 @@
 # Bingo API and String ID hosting
 
 Bingo serves vanilla JS/Vite and Express/Prisma from the same HTTPS origin.
-All String ID members may host; guests play public games without signing in.
+String ID is the primary host sign-in; direct Google sign-in is a secondary
+fallback. Guests play public games without signing in.
 The host workspace is **My games**. Site-wide admin reporting is not part of this release.
 
 ## Local setup
@@ -25,13 +26,35 @@ Bingo links to `https://id.string.sg/login?continue=bingo`. The backend validate
 only the `string_session` cookie by calling fixed `https://id.string.sg/api/me`.
 It returns a minimal identity to the browser; provider tokens, Google subjects and
 private String ID profile fields are never copied into browser storage.
+The Google fallback uses the existing OAuth client: `GOOGLE_CLIENT_ID` on the
+server, `VITE_GOOGLE_CLIENT_ID` for local/preview builds and `googleClientId` in
+`public/config-production.json` for the production frontend. They must match.
+Google's official library verifies the signature, audience, issuer and expiry;
+Bingo also requires a verified email and matches accounts by Google `sub` only.
+An email collision never links a different Google subject to an existing owner.
+
+The Google ID token is discarded after verification. A random 256-bit Bingo
+session is held in a host-only HttpOnly/Secure/SameSite=Lax `bingo_google_session`
+cookie; only its hash, user ID and expiry are stored in `bingo_host_sessions`.
+Expiry is bounded by the Google credential and at most one hour. Every protected
+request checks this session; sign-out revokes it. An HttpOnly `bingo_auth_provider` session cookie
+remembers the explicit Google choice after token expiry, so it returns 401 rather
+than silently switching to another String ID account. Choosing the primary String
+ID action clears only these Bingo cookies before the normal String ID handoff.
+Neither credential is placed in localStorage/sessionStorage or the JSON response.
+
 401 means signed out; 503 means identity service unavailable. A failed identity
 lookup never becomes an empty game list. Host mutations require the exact
 `BINGO_APP_ORIGIN` Origin (production default `https://bingo.string.sg`).
 
 - `GET /api/auth/me`: validated local host projection.
+- `POST /api/auth/google`: Origin-protected exchange of a Google credential for
+  Bingo's Google cookie session; returns the same minimal host projection.
+- `POST /api/auth/google/clear`: Origin-protected clearing of Bingo fallback
+  cookies, independent of the database; it leaves String ID sessions unchanged.
 - `POST /api/auth/logout`: guarded proxy to String ID; successful deletion cookie
   is relayed. This signs out this browser across String apps, not every device.
+  When Google is active, it revokes the selected Bingo session and clears its cookies.
 - `GET/POST /api/games`: list/create the signed-in user's games.
 - `GET/PUT/DELETE /api/games/:id`: public read or owner-only management.
 - `GET /api/games/:id/play`: public saved board including grid size.
@@ -64,6 +87,9 @@ it never inherits String ID admin status and does not bypass owner-only routes.
 Rollback application code first; retain the additive columns, backfilled IDs,
 audit records and compatibility trigger. Do not drop new data during rollback.
 Production migrations/configuration/deployments require separate approval.
+Google fallback also requires the two existing migrations and additive
+`202611070001_google_host_sessions` table migration; it does not bypass the
+missing stable-owner columns or shared request-limit table.
 
 ### Host account-check incident: missing migrations
 
@@ -78,7 +104,7 @@ uses that same command. Pending/failed migrations, absent configuration or an
 unreachable database stop deployment. This checks migration history, not manual
 schema drift. `npm run build` remains available for local frontend-only work.
 
-Standing rule: nothing in the pipeline applies migrations. Apply each new
+Standing rule: deployment builds never apply migrations. CI migrates its disposable test database. Apply each new
 migration to production (with approval, using `migrate deploy` over the direct
 connection) before merging the PR that adds it, or the production build stops.
 Migrations must stay additive so the running code tolerates the new schema.
@@ -92,7 +118,8 @@ For the separately approved production repair:
    initial read-only baseline was 12 users, 9 games and zero unmatched owners.
    Use Neon's direct connection for backup/migration commands; retain the runtime
    pooled connection unchanged.
-2. Confirm only the two migrations above are pending. Review their existing SQL,
+2. Confirm the pending migrations are the two auth migrations above and, for the
+   Google fallback, `202611070001_google_host_sessions`. Review their SQL,
    then run `npx prisma migrate deploy --schema backend/prisma/schema.prisma`
    against that database. Do not use `migrate dev`, reset or an automatic build
    migration against production.

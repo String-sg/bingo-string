@@ -27,8 +27,20 @@
 
 - [x] T008 Record validation, limitations and pending production work in specs/002-auth-release-readiness/quickstart.md for the reviewable branch and draft PR.
 
+## Phase 6: Reinstate Google (US1)
+
+- [x] T009 [US1] Add Google identity-boundary cases to tests/backend/auth.test.ts and direct sign-in/expiry/draft/browser cases to tests/host-onboarding.spec.js, mocking only the provider.
+- [x] T010 [US1] Restore official verification and stable subject matching in backend/src/middleware/auth.ts, add opaque revocable sessions via backend/prisma/migrations/202611070001_google_host_sessions/, and an Origin-protected HttpOnly exchange/logout in backend/src/routes/auth.ts; update every protected caller in backend/src/routes/games.ts.
+- [x] T011 [US1] Keep String ID primary in js/authManager.js and render Google as a secondary fallback, retain saved continuation, and update host labels in js/game-creation.js and new.html.
+- [x] T012 [US1] Update backend/README.md, environment examples and Spec Kit evidence; run the scoped backend and full desktop/mobile checks for review in PR #72.
+
 ## Dependencies and implementation strategy
 
 T001 → T002 → T003. T006 enables the guarded-build portion of T003; T004 and T007 follow migration fixture validation. T005 and T008 complete review before requesting production approval. No production mutation is an implementation task.
 
 There is no useful parallel implementation work in this small repair. Existing independent typecheck/startup commands may run together. MVP is the verified existing migration repair; US2 prevents this release-order failure recurring.
+
+## Phase 7: Convergence
+
+- [x] T013 [US2] Require the GitHub Actions journey check on current main and verify the rule has no bypass (FR-011).
+- [ ] T014 [US2] After separate production migration approval, verify schema and ownership, validate the exact Vercel Preview candidate and complete a real signed-in smoke test (FR-001, FR-002, FR-006, FR-011).

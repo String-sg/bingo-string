@@ -45,7 +45,7 @@ class GameCreationApp {
     $("authGate").textContent =
       this.authManager.status === "error"
         ? this.authManager.message
-        : "Sign in with String ID to create and manage your game. Your draft stays here.";
+        : "Sign in to create and manage your game. Your draft stays here.";
     if (ready) this.showStep(0);
   }
   bind() {

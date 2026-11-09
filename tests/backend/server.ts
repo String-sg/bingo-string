@@ -1,3 +1,7 @@
+import { createRequire } from "node:module";
+import { resolve } from "node:path";
+const backendRequire = createRequire(resolve(__dirname, "../../backend/package.json"));
+const { OAuth2Client, LoginTicket } = backendRequire("google-auth-library") as typeof import("google-auth-library");
 // Local browser-test boundary: only identity is mocked; Bingo uses real HTTP + DB.
 if (
   !process.env.BINGO_TEST_DATABASE_URL ||
@@ -10,6 +14,16 @@ process.env.DATABASE_URL = process.env.BINGO_TEST_DATABASE_URL;
 process.env.VERCEL = "1";
 process.env.BINGO_APP_ORIGIN = "http://127.0.0.1:5186";
 process.env.CORS_ORIGINS = "http://127.0.0.1:5186";
+process.env.GOOGLE_CLIENT_ID = "test-google-client";
+OAuth2Client.prototype.verifyIdToken = (async (options: any) => {
+  if (options.idToken !== "header.browser.signature" || options.audience !== "test-google-client")
+    throw new Error("Invalid test Google credential");
+  return new LoginTicket(undefined, {
+    iss: "https://accounts.google.com", aud: "test-google-client", sub: "browser-host-subject",
+    email: "browser-host@example.com", email_verified: true, name: "Google browser host",
+    iat: Math.floor(Date.now()/1000), exp: Math.floor(Date.now()/1000) + 3600,
+  });
+}) as typeof OAuth2Client.prototype.verifyIdToken;
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (input, init) => {
   if (String(input) === "https://id.string.sg/api/me") {

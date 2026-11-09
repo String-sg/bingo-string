@@ -32,6 +32,6 @@ export default defineConfig({
   webServer: [
     { command: 'npx tsx tests/backend/server.ts', url: 'http://127.0.0.1:3186/health', reuseExistingServer: false, timeout: 30000 },
     { command: 'npm run dev -- --host 127.0.0.1 --port 5186 --strictPort', url: 'http://127.0.0.1:5186',
-      env: { BINGO_DEV_API_TARGET: 'http://127.0.0.1:3186' }, reuseExistingServer: false, timeout: 30000 }
+      env: { BINGO_DEV_API_TARGET: 'http://127.0.0.1:3186', VITE_GOOGLE_CLIENT_ID: 'test-google-client' }, reuseExistingServer: false, timeout: 30000 }
   ],
 });

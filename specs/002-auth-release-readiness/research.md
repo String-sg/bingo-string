@@ -6,7 +6,9 @@ The supplied mobile screenshot and live browser both show `Request service unava
 
 ## Decision
 
-Reuse existing migrations `202610250001_stable_string_identity` and `202610250002_host_request_limits`. Gate Vercel builds with installed Prisma `migrate status`; use the same guarded build in CI. Keep the normal frontend build available without a database. Follow Ponytail full: use existing commands, retain security and data boundaries, add no custom readiness service.
+Keep String ID primary and restore direct Google as a secondary fallback, as requested. Reuse the existing OAuth client and Google's rendered button with official server verification. Resolve by verified Google subject and discard the Google credential. An opaque Bingo session is stored only as a hash, with its user and expiry, in one additive session table. This satisfies the constitution's prohibition on retaining provider bearer tokens and supports revocation without a new signing secret. A provider-choice cookie prevents account switching on expiry. Clearing the fallback before the primary String ID handoff is Origin-protected and database-independent. Google's [server verification guide](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token) recommends its verification library and stable `sub` identity; its [button guide](https://developers.google.com/identity/gsi/web/guides/display-button) supplies the rendering API.
+
+Reuse existing migrations `202610250001_stable_string_identity` and `202610250002_host_request_limits`. Both providers still require them. Add `202611070001_google_host_sessions` for Bingo-owned fallback sessions. Gate Vercel builds with installed Prisma `migrate status`; use the same guarded build in CI. Keep the normal frontend build available without a database. Follow Ponytail full: reuse configuration and ownership fields; no custom JWT signer, new signing-secret setup or readiness service.
 
 ## Rationale
 
@@ -14,7 +16,9 @@ The database predates the code already deployed. Bypassing the limiter would onl
 
 ## Alternatives considered
 
-- New auth provider or cookie changes: unsupported by the failed boundary.
+- Replacing String ID with Google: contradicts the user's clarified provider order.
+- Reusing the old browser-decoded/localStorage token flow: does not establish a server-authoritative session; use official verification and HttpOnly cookies.
+- Matching Google users by email: could reassign legacy games; use stable subject matching and reject collisions.
 - Removing/failing open the limiter: violates the existing authority contract.
 - Custom schema checker or automatic migration during build: adds code or mutates production without the required approval.
 
