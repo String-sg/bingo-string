@@ -2,7 +2,7 @@
   "name": "string-bingo",
   "framework": "html",
   "variant": "compact",
-  "pages": ["index.html", "new.html"],
+  "pages": ["index.html", "play.html", "new.html"],
   "credits": [
     {
       "label": "Inspired by",

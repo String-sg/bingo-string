@@ -1,5 +1,6 @@
 import { getConfig } from "./config.js";
 const SIGN_IN = "https://id.string.sg/login?continue=bingo";
+const isDefaultBoard = () => ["/play", "/play/", "/play.html"].includes(location.pathname);
 const node = (tag, text, className) => {
   const el = document.createElement(tag);
   if (text !== undefined) el.textContent = text;
@@ -68,12 +69,12 @@ export class AuthManager {
     try {
       intent = sessionStorage.getItem("bingo:host-intent");
     } catch {}
-    if (this.user && window.location.pathname === "/" && intent === "create") {
+    if (this.user && isDefaultBoard() && intent === "create") {
       sessionStorage.removeItem("bingo:host-intent");
       window.location.assign("/new.html");
     } else if (
       this.user &&
-      window.location.pathname === "/" &&
+      isDefaultBoard() &&
       (intent === "games" ||
         new URLSearchParams(location.search).get("host") === "1")
     ) {
@@ -100,9 +101,6 @@ export class AuthManager {
   showAuthModal(
     intent = location.pathname.includes("new.html") ? "create" : "games",
   ) {
-    try {
-      sessionStorage.setItem("bingo:host-intent", intent);
-    } catch {}
     let dialog = document.getElementById("hostSignInDialog");
     if (dialog) dialog.remove();
     dialog = node("dialog");
@@ -123,6 +121,11 @@ export class AuthManager {
     dialog.append(node("p", "Your saved draft stays here while you sign in."));
     const link = node("a", "Continue with String ID", "btn btn-primary");
     link.href = SIGN_IN;
+    link.addEventListener("click", () => {
+      try {
+        sessionStorage.setItem("bingo:host-intent", intent);
+      } catch {}
+    });
     dialog.append(link);
     const retry = node("button", "Retry account check", "btn btn-outline");
     retry.type = "button";
@@ -184,7 +187,7 @@ export class AuthManager {
   async redirectToAdmin() {
     await this.ready;
     if (this.user) {
-      if (location.pathname !== "/") location.assign("/?host=1");
+      if (!isDefaultBoard()) location.assign("/play?host=1");
       else this.showAdminDashboard();
     } else this.showAuthModal();
   }

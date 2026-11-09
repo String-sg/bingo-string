@@ -34,7 +34,7 @@ class BingoApp {
             if (pathParts.length >= 2 && pathParts[0] === 'play') {
                 this.gameId = pathParts[1];
                 await this.loadCustomGame(this.gameId);
-            } else if (pathParts.length >= 2 && pathParts[0].includes('@')) {
+            } else if (pathParts.length >= 2 && /@|%40/i.test(pathParts[0])) {
                 // Legacy support for email/uuid format
                 this.gameId = pathParts[1];
                 await this.loadCustomGame(this.gameId);
