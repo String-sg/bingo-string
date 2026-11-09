@@ -1,5 +1,30 @@
 import { getConfig } from "./config.js";
 const SIGN_IN = "https://id.string.sg/login?continue=bingo";
+let googleLibrary;
+function loadGoogle() {
+  if (window.google?.accounts?.id) return Promise.resolve();
+  if (!googleLibrary) {
+    googleLibrary = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      const fail = () => {
+        clearTimeout(timeout);
+        script.remove();
+        reject(new Error("Google sign-in could not load. Retry or use String ID."));
+      };
+      const timeout = setTimeout(fail, 10000);
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.onerror = fail;
+      script.onload = () => {
+        clearTimeout(timeout);
+        if (window.google?.accounts?.id) resolve();
+        else fail();
+      };
+      document.head.append(script);
+    }).catch((cause) => { googleLibrary = null; throw cause; });
+  }
+  return googleLibrary;
+}
 const node = (tag, text, className) => {
   const el = document.createElement(tag);
   if (text !== undefined) el.textContent = text;
@@ -91,6 +116,8 @@ export class AuthManager {
     if (name) name.textContent = this.user?.name || "String member";
     const myGames = document.getElementById("myGamesBtn");
     if (myGames) myGames.hidden = !this.user;
+    const logout = document.getElementById("stringLogoutBtn");
+    if (logout) logout.textContent = this.user?.provider === "google" ? "Sign out of Bingo" : "Sign out of String ID";
   }
   async beginHost() {
     await this.ready;
@@ -124,6 +151,21 @@ export class AuthManager {
     const link = node("a", "Continue with String ID", "btn btn-primary");
     link.href = SIGN_IN;
     dialog.append(link);
+    dialog.append(node("p", "Or sign in directly with Google:"));
+    const googleButton = node("div");
+    googleButton.id = "googleSignInButton";
+    const googleStatus = node("p", "Loading Google sign-in…");
+    googleStatus.setAttribute("role", "status");
+    dialog.append(googleButton, googleStatus);
+    link.onclick = async (event) => {
+      event.preventDefault();
+      const response = await fetch(`${this.config.API_BASE_URL}/auth/google/clear`, { method: "POST" }).catch(() => null);
+      if (response?.ok) location.assign(SIGN_IN);
+      else {
+        googleStatus.textContent = "Could not continue to String ID. Please retry.";
+        googleStatus.setAttribute("role", "alert");
+      }
+    };
     const retry = node("button", "Retry account check", "btn btn-outline");
     retry.type = "button";
     retry.onclick = async () => {
@@ -157,11 +199,57 @@ export class AuthManager {
       document.getElementById("hostGameBtn")?.focus(),
     );
     dialog.showModal();
+    this.renderGoogleButton(googleButton, googleStatus, dialog, intent);
+  }
+  async renderGoogleButton(button, status, dialog, intent) {
+    try {
+      if (!this.config?.GOOGLE_CLIENT_ID) throw new Error("Google sign-in is unavailable. Please use String ID.");
+      await loadGoogle();
+      if (!dialog.open) return;
+      window.google.accounts.id.initialize({
+        client_id: this.config.GOOGLE_CLIENT_ID,
+        auto_select: false,
+        callback: (response) => this.signInWithGoogle(response.credential, status, dialog, intent),
+      });
+      window.google.accounts.id.renderButton(button, {
+        theme: "outline", size: "large", text: "continue_with", width: Math.min(320, button.clientWidth),
+      });
+      status.textContent = "";
+    } catch (cause) {
+      status.textContent = cause.message;
+      status.setAttribute("role", "alert");
+    }
+  }
+  async signInWithGoogle(credential, status, dialog, intent) {
+    if (this.googleSigningIn) return;
+    this.googleSigningIn = true;
+    status.textContent = "Signing in…";
+    try {
+      const response = await fetch(`${this.config.API_BASE_URL}/auth/google`, {
+        method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ credential }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || "Google sign-in failed. Please retry or use String ID.");
+      this.user = body;
+      this.isAuthenticated = true;
+      this.status = "ready";
+      this.updateUI();
+      try { sessionStorage.removeItem("bingo:host-intent"); } catch {}
+      dialog.close();
+      if (location.pathname.includes("new.html")) location.reload();
+      else if (intent === "create") location.assign("/new.html");
+      else this.redirectToAdmin();
+    } catch (cause) {
+      status.textContent = cause.message;
+      status.setAttribute("role", "alert");
+    } finally { this.googleSigningIn = false; }
   }
   closeAuthModal() {
     document.getElementById("hostSignInDialog")?.close();
   }
   async logout() {
+    const provider = this.user?.provider;
     const response = await fetch(`${this.config.API_BASE_URL}/auth/logout`, {
       method: "POST",
     }).catch(() => null);
@@ -177,7 +265,7 @@ export class AuthManager {
     this.updateUI();
     this.hideAdminDashboard();
     this.showError(
-      "Signed out of String ID on this browser, including other String apps.",
+      provider === "google" ? "Google sign-in ended. Your String ID session is unchanged." : "Signed out of String ID on this browser, including other String apps.",
     );
     if (location.pathname.includes("new.html")) location.reload();
   }

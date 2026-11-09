@@ -1,4 +1,21 @@
 import { test, expect } from "@playwright/test";
+test.beforeEach(async ({ page }) => {
+  await page.route("https://accounts.google.com/gsi/client", route => route.abort());
+});
+async function googleButton(page) {
+  await page.route("https://accounts.google.com/gsi/client", route => route.fulfill({
+    contentType: "application/javascript",
+    body: `let settings; window.google = { accounts: { id: {
+      initialize: value => { settings = value; },
+      renderButton: container => {
+        const button = document.createElement('button');
+        button.type = 'button'; button.textContent = 'Continue with Google';
+        button.onclick = () => settings.callback({credential:'header.browser.signature'});
+        container.append(button);
+      }
+    } } };`,
+  }));
+}
 async function host(context) {
   await context.addCookies([
     {
@@ -11,6 +28,76 @@ async function host(context) {
     },
   ]);
 }
+
+test("String ID remains primary; Google fallback restores the draft, creates a game and signs out of Bingo", async ({ page, context }) => {
+  await googleButton(page);
+  await page.goto("/new.html");
+  await page.getByRole("button", { name: "Continue with String ID", exact: true }).click();
+  const stringId = page.getByRole("link", { name: "Continue with String ID", exact: true });
+  await expect(stringId).toHaveClass(/btn-primary/);
+  expect(await stringId.evaluate(el => !!(el.compareDocumentPosition(document.getElementById("googleSignInButton")) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
+  await page.getByRole("button", { name: "Continue with Google", exact: true }).click();
+  await expect(page.locator("#wizard")).toBeVisible();
+  await page.getByLabel("Game name", { exact: true }).fill("Google fallback draft");
+  await context.clearCookies();
+  await page.reload();
+  await page.getByRole("button", { name: "Continue with String ID", exact: true }).click();
+  await page.getByRole("button", { name: "Continue with Google", exact: true }).click();
+  await expect(page.getByLabel("Game name", { exact: true })).toHaveValue("Google fallback draft");
+  const storage = await page.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage }));
+  expect(storage).not.toContain("header.browser.signature");
+  const cookie = (await context.cookies()).find(c => c.name === "bingo_google_session");
+  expect(cookie.httpOnly).toBe(true);
+  expect(cookie.sameSite).toBe("Lax");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Fill blanks with starter prompts" }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Create game", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Your game is ready" })).toBeVisible();
+  await page.getByRole("button", { name: "Sign out of Bingo", exact: true }).click();
+  await expect(page.locator("#editorSignIn")).toBeVisible();
+  expect((await context.cookies()).some(c => ["bingo_google_session", "bingo_auth_provider"].includes(c.name))).toBe(false);
+  expect((await page.request.get("/api/auth/me")).status()).toBe(401);
+});
+
+test("Google load and exchange failures leave String ID available and keep the draft", async ({ page }) => {
+  await page.route("https://accounts.google.com/gsi/client", route => route.abort());
+  await host(page.context());
+  await page.goto("/new.html");
+  await page.getByLabel("Game name", { exact: true }).fill("Keep my draft after Google fails");
+  await page.context().clearCookies();
+  await page.reload();
+  await page.getByRole("button", { name: "Continue with String ID", exact: true }).click();
+  await expect(page.getByText("Google sign-in could not load. Retry or use String ID.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Continue with String ID", exact: true })).toHaveAttribute("href", "https://id.string.sg/login?continue=bingo");
+  await page.getByRole("button", { name: "Keep playing", exact: true }).click();
+  await page.unroute("https://accounts.google.com/gsi/client");
+  await googleButton(page);
+  await page.route("**/api/auth/google", route => route.fulfill({ status: 503, json: { error: "Google unavailable; retry" } }));
+  await page.getByRole("button", { name: "Continue with String ID", exact: true }).click();
+  await page.getByRole("button", { name: "Continue with Google", exact: true }).click();
+  await expect(page.getByText("Google unavailable; retry", { exact: true })).toBeVisible();
+  await expect(page.locator("#wizard")).toBeHidden();
+  await expect(page.getByRole("link", { name: "Continue with String ID", exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Game name", { exact: true })).toHaveValue("Keep my draft after Google fails");
+});
+
+test("choosing primary String ID clears an expired Google choice and preserves the String ID session", async ({ page, context }) => {
+  await host(context);
+  await context.addCookies([{ name: "bingo_auth_provider", value: "google", domain: "127.0.0.1", path: "/", httpOnly: true }]);
+  await page.route("https://id.string.sg/login?continue=bingo", route => route.fulfill({ contentType: "text/html", body: "String ID handoff" }));
+  await page.goto("/new.html");
+  await expect(page.locator("#wizard")).toBeHidden();
+  await page.getByRole("button", { name: "Continue with String ID", exact: true }).click();
+  await page.getByRole("link", { name: "Continue with String ID", exact: true }).click();
+  await expect(page).toHaveURL("https://id.string.sg/login?continue=bingo");
+  const cookies = await context.cookies();
+  expect(cookies.some(c => c.name === "bingo_auth_provider")).toBe(false);
+  expect(cookies.some(c => c.name === "string_session")).toBe(true);
+  await page.goto("/new.html");
+  await expect(page.locator("#wizard")).toBeVisible();
+});
 for (const size of [3, 5])
   test(`host creates ${size}x${size}, shares it, and guest plays without login`, async ({
     page,

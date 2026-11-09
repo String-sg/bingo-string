@@ -7,7 +7,7 @@ permissions:
   contents: read
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16
@@ -32,7 +32,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npx prisma migrate deploy --schema backend/prisma/schema.prisma
-      - run: npm run build
+      - run: npm run build:vercel
       - run: npm run check:backend
       - run: npm ci --prefix backend --no-audit --no-fund
       - run: npm run prisma:generate --prefix backend

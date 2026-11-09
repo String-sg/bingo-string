@@ -1,9 +1,13 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, CookieOptions } from "express";
+import { OAuth2Client } from "google-auth-library";
+import { createHash, randomBytes } from "node:crypto";
+import type { User } from "@prisma/client";
 import prisma from "../lib/prisma";
 export interface AuthenticatedRequest<Params = Request["params"]> extends Request<Params> {
   user?: {
     id: string;
-    stringMemberId: string;
+    stringMemberId: string | null;
+    provider: "string" | "google";
     email: string | null;
     name: string;
     picture: string | null;
@@ -11,13 +15,93 @@ export interface AuthenticatedRequest<Params = Request["params"]> extends Reques
   };
 }
 const ID_ORIGIN = "https://id.string.sg";
-class AuthFailure extends Error {
+export class AuthFailure extends Error {
   constructor(
     readonly status: number,
     message: string,
   ) {
     super(message);
   }
+}
+export const GOOGLE_SESSION_COOKIE = "bingo_google_session";
+export const GOOGLE_PROVIDER_COOKIE = "bingo_auth_provider";
+const googleClient = new OAuth2Client();
+export function googleCookieOptions(): CookieOptions {
+  return {
+    httpOnly: true, sameSite: "lax", path: "/",
+    secure: process.env.NODE_ENV === "production" || ["production", "preview"].includes(process.env.VERCEL_ENV || ""),
+  };
+}
+export function googleSessionToken(req: Request): string | null | undefined {
+  const values = (req.headers.cookie || "").split(";").map(p => p.trim())
+    .filter(p => p.startsWith(`${GOOGLE_SESSION_COOKIE}=`));
+  if (!values.length) {
+    // Retain the chosen provider after token expiry; never silently switch accounts.
+    return (req.headers.cookie || "").split(";").some(p => p.trim() === `${GOOGLE_PROVIDER_COOKIE}=google`) ? null : undefined;
+  }
+  return values.length === 1 ? values[0].slice(GOOGLE_SESSION_COOKIE.length + 1) : null;
+}
+function isBingoAdmin(memberId: string | null) {
+  return !!memberId && (process.env.BINGO_ADMIN_MEMBER_IDS || "").split(",").map(s => s.trim()).includes(memberId);
+}
+function googleUser(user: User) {
+  return {
+    id: user.id, stringMemberId: user.stringMemberId, provider: "google" as const,
+    email: user.email, name: user.name, picture: user.picture, isAdmin: isBingoAdmin(user.stringMemberId),
+  };
+}
+export function googleSessionHash(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+async function resolveGoogleSession(token: unknown) {
+  if (typeof token !== "string" || !/^[a-f0-9]{64}$/.test(token))
+    throw new AuthFailure(401, "Sign in with String ID or Google");
+  const session = await prisma.bingoHostSession.findUnique({
+    where: { tokenHash: googleSessionHash(token) }, include: { user: true },
+  });
+  if (!session || session.expiresAt.getTime() <= Date.now())
+    throw new AuthFailure(401, "Your Bingo session expired. Sign in with String ID or Google.");
+  return googleUser(session.user);
+}
+export async function createGoogleSession(credential: unknown) {
+  const audience = process.env.GOOGLE_CLIENT_ID;
+  if (!audience) throw new AuthFailure(503, "Google sign-in is not configured");
+  if (typeof credential !== "string" || credential.length > 4096 || !/^[\w-]+\.[\w-]+\.[\w-]+$/.test(credential))
+    throw new AuthFailure(401, "Google sign-in could not be verified. Please try again.");
+  let payload;
+  try {
+    const ticket = await googleClient.verifyIdToken({ idToken: credential, audience });
+    payload = ticket.getPayload();
+  } catch {
+    throw new AuthFailure(401, "Google sign-in could not be verified. Please try again.");
+  }
+  if (!payload || typeof payload.sub !== "string" || !payload.sub || payload.sub.length > 255 ||
+      payload.email_verified !== true || typeof payload.email !== "string" || !payload.email.trim() || payload.email.length > 320 ||
+      typeof payload.exp !== "number" || payload.exp <= Math.floor(Date.now() / 1000))
+    throw new AuthFailure(401, "Google sign-in could not be verified. Please try again.");
+  const name = typeof payload.name === "string" ? payload.name.slice(0, 200) : "Google host";
+  const picture = typeof payload.picture === "string" && /^https:\/\//.test(payload.picture) ? payload.picture : null;
+  let user = await prisma.user.findUnique({ where: { googleId: payload.sub } });
+  if (!user) {
+    try {
+      user = await prisma.user.create({ data: {
+        googleId: payload.sub, email: payload.email.trim().toLowerCase(), name, picture,
+      } });
+    } catch (cause) {
+      if ((cause as { code?: string })?.code !== "P2002") throw cause;
+      user = await prisma.user.findUnique({ where: { googleId: payload.sub } });
+      if (!user) throw new AuthFailure(409, "This email belongs to another account. Please request an ownership review.");
+    }
+  }
+  const token = randomBytes(32).toString("hex");
+  const expiresAt = Math.min(payload.exp, Math.floor(Date.now() / 1000) + 3600);
+  await prisma.bingoHostSession.create({ data: {
+    tokenHash: googleSessionHash(token), userId: user.id, expiresAt: new Date(expiresAt * 1000),
+  } });
+  await prisma.$executeRaw`DELETE FROM bingo_host_sessions WHERE token_hash IN (
+    SELECT token_hash FROM bingo_host_sessions WHERE expires_at <= clock_timestamp() LIMIT 100
+  )`;
+  return { user: googleUser(user), token, expiresAt };
 }
 export function trustedOrigin(req: Request, res: Response, next: NextFunction) {
   const expected = process.env.BINGO_APP_ORIGIN || "https://bingo.string.sg";
@@ -144,27 +228,26 @@ export async function resolveMember(req: Request) {
         );
     }
   }
-  const admins = (process.env.BINGO_ADMIN_MEMBER_IDS || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
   return {
     id: user.id,
     stringMemberId: id,
+    provider: "string" as const,
     email: user.email,
     name,
     picture,
-    isAdmin: admins.includes(id),
+    isAdmin: isBingoAdmin(id),
   };
 }
-export async function authenticateString(
+export async function authenticateHost(
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
 ) {
   try {
     res.set("Cache-Control", "no-store");
-    req.user = await resolveMember(req);
+    const googleToken = googleSessionToken(req);
+    // An explicitly chosen fallback keeps its identity until Bingo sign-out/expiry.
+    req.user = googleToken !== undefined ? await resolveGoogleSession(googleToken) : await resolveMember(req);
     next();
   } catch (cause) {
     res
@@ -182,6 +265,6 @@ export async function optionalAuth(
   res: Response,
   next: NextFunction,
 ) {
-  if (!sessionCookie(req)) return next();
-  return authenticateString(req, res, next);
+  if (!sessionCookie(req) && googleSessionToken(req) === undefined) return next();
+  return authenticateHost(req, res, next);
 }

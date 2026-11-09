@@ -22,6 +22,7 @@ model User {
 
   // Relations
   games        Game[]
+  hostSessions BingoHostSession[]
 
   @@map("users")
 }
@@ -91,4 +92,14 @@ model RateLimitBucket {
   resetAt DateTime @map("reset_at") @db.Timestamptz(3)
   @@index([resetAt])
   @@map("rate_limit_buckets")
+}
+
+model BingoHostSession {
+  tokenHash String @id @map("token_hash")
+  userId String @map("user_id")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([expiresAt])
+  @@map("bingo_host_sessions")
 }

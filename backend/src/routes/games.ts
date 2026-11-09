@@ -1,7 +1,7 @@
 import express from 'express';
 import { hostLimiter, createGameLimiter } from '../middleware/rate-limit';
 import prisma from '../lib/prisma';
-import { authenticateString, optionalAuth, AuthenticatedRequest, trustedOrigin } from '../middleware/auth';
+import { authenticateHost, optionalAuth, AuthenticatedRequest, trustedOrigin } from '../middleware/auth';
 
 const router = express.Router();
 const validName=(v:unknown):v is string=>typeof v==='string' && v.trim().length>0 && v.length<=100;
@@ -20,7 +20,7 @@ function hasBingo(progress:number[],size:number) {
 
 
 // GET /api/games - Get user's games (requires auth)
-router.get('/', hostLimiter, authenticateString, async (req: AuthenticatedRequest, res) => {
+router.get('/', hostLimiter, authenticateHost, async (req: AuthenticatedRequest, res) => {
   try {
     const games = await prisma.game.findMany({
       where: {
@@ -39,7 +39,7 @@ router.get('/', hostLimiter, authenticateString, async (req: AuthenticatedReques
 });
 
 // POST /api/games - Create new game (requires auth)
-router.post('/', createGameLimiter, trustedOrigin, authenticateString, async (req: AuthenticatedRequest, res) => {
+router.post('/', createGameLimiter, trustedOrigin, authenticateHost, async (req: AuthenticatedRequest, res) => {
   try {
     const { name, challenges, isPublic = true, gridSize = 5, createKey } = req.body;
 
@@ -111,7 +111,7 @@ router.get('/:id', hostLimiter, optionalAuth, async (req: AuthenticatedRequest<{
 });
 
 // PUT /api/games/:id - Update game (requires auth and ownership)
-router.put('/:id', hostLimiter, trustedOrigin, authenticateString, async (req: AuthenticatedRequest<{ id: string }>, res) => {
+router.put('/:id', hostLimiter, trustedOrigin, authenticateHost, async (req: AuthenticatedRequest<{ id: string }>, res) => {
   try {
     const { id } = req.params;
     const { name, challenges, isPublic } = req.body;
@@ -151,7 +151,7 @@ router.put('/:id', hostLimiter, trustedOrigin, authenticateString, async (req: A
 });
 
 // DELETE /api/games/:id - Delete game (requires auth and ownership)
-router.delete('/:id', hostLimiter, trustedOrigin, authenticateString, async (req: AuthenticatedRequest<{ id: string }>, res) => {
+router.delete('/:id', hostLimiter, trustedOrigin, authenticateHost, async (req: AuthenticatedRequest<{ id: string }>, res) => {
   try {
     const { id } = req.params;
 
@@ -300,7 +300,7 @@ router.post('/:id/progress', async (req, res) => {
 });
 
 // GET /api/games/:id/results - Get game results (Leaderboard) - Requires Auth
-router.get('/:id/results', hostLimiter, authenticateString, async (req: AuthenticatedRequest<{ id: string }>, res) => {
+router.get('/:id/results', hostLimiter, authenticateHost, async (req: AuthenticatedRequest<{ id: string }>, res) => {
   try {
     const { id } = req.params;
 
