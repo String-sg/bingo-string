@@ -110,7 +110,6 @@ class BingoApp {
             const footer = document.querySelector('.footer');
             if (footer) {
                 const info = document.createElement('p');
-                info.style.color = '#666';
                 info.textContent = `Playing: ${game.name} (Created by ${game.creator.name})`;
                 footer.insertBefore(info, footer.firstChild);
             }
@@ -714,4 +713,4 @@ class BingoApp {
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.bingoApp = new BingoApp();
-}); 
+});

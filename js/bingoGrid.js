@@ -18,7 +18,7 @@ export class BingoGrid {
         this.challenges = challenges;
 
         // Set CSS grid columns based on grid size
-        this.container.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+        this.container.style.gridTemplateColumns = `repeat(${gridSize}, minmax(0, 1fr))`;
 
         // Add grid size class for responsive styling
         this.container.className = `bingo-grid grid-${gridSize}x${gridSize}`;
@@ -162,4 +162,4 @@ export class BingoGrid {
         }
         if (this.gridSize === 5) this.setCellCompleted(12);
     }
-} 
+}
