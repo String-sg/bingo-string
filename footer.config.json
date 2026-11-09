@@ -3,6 +3,7 @@
   "framework": "html",
   "variant": "compact",
   "pages": ["index.html", "play.html", "new.html"],
+  "support": "supported by",
   "credits": [
     {
       "label": "Inspired by",

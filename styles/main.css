@@ -134,6 +134,8 @@ html {
 .bingo-grid {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
+    /* Every row takes the tallest row's height, so all boxes are one size. */
+    grid-auto-rows: 1fr;
     gap: clamp(4px, 1vw, 8px);
     background: rgba(255, 255, 255, 0.1);
     padding: clamp(4px, 1vw, 8px);
@@ -159,7 +161,8 @@ html {
 .bingo-cell {
     background: #f5f7f6;
     border: 2px solid transparent;
-    padding: clamp(3px, 1.25vw, 12px);
+    padding: clamp(3px, 1vw, 10px);
+    container-type: inline-size;
     text-align: center;
     display: flex;
     flex-direction: column;
@@ -190,15 +193,18 @@ html {
     font-family: var(--font-title);
     font-size: 0.875rem;
     font-weight: 700;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
 .cell-text {
     max-width: 100%;
-    overflow-wrap: anywhere;
+    /* Break a word only when it cannot fit on its own line. */
+    overflow-wrap: break-word;
     hyphens: auto;
     font-size: clamp(0.6875rem, 2.5vw, 0.875rem);
-    line-height: 1.25;
+    /* Size to the box, not the window, so long prompts don't set every row's height. */
+    font-size: clamp(0.6875rem, 14cqi, 0.875rem);
+    line-height: 1.2;
     font-weight: 500;
 }
 
