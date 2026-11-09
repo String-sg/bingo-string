@@ -482,6 +482,15 @@ html {
     }
 }
 
+/* Dragging the board pans it instead of scrolling the page, so keep Recenter on screen while the board is moved. */
+.grid-container.is-transformed ~ .footer .btn-recenter {
+    position: fixed;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+    z-index: 100;
+    box-shadow: var(--shadow-heavy);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     body {

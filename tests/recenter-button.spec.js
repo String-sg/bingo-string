@@ -272,5 +272,27 @@ test.describe('Recenter Button', () => {
       expect(box.y).toBeGreaterThanOrEqual(board.y + board.height);
       expect(box.y + box.height).toBeLessThanOrEqual(footer.y);
     });
+
+    test('mobile recenter stays on screen while the board is zoomed or panned', async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 667 });
+      await page.goto('/');
+      await expect(page.locator('.bingo-cell')).toHaveCount(25);
+      const container = page.locator('.grid-container');
+      const recenterBtn = page.locator('#recenterBtn');
+      await expect(container).not.toHaveClass(/is-transformed/);
+
+      await page.evaluate(() => {
+        const touch = window.bingoApp.touchManager;
+        touch.scale = 2;
+        touch.translateX = 40;
+        touch.updateTransform();
+      });
+      await expect(container).toHaveClass(/is-transformed/);
+      await expect(recenterBtn).toBeInViewport({ ratio: 1 });
+
+      await recenterBtn.click();
+      await expect(container).not.toHaveClass(/is-transformed/);
+      await expect(page.locator('.bingo-grid')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+    });
   });
 });
