@@ -1,0 +1,13 @@
+{
+  "name": "string-bingo",
+  "framework": "html",
+  "variant": "compact",
+  "pages": ["index.html", "new.html"],
+  "credits": [
+    {
+      "label": "Inspired by",
+      "name": "Seng Kwang (Physics educator @ TJC)",
+      "url": "https://id.string.sg/u/sengkwang"
+    }
+  ]
+}

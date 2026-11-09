@@ -88,8 +88,9 @@ test('the board and editor have one compact String footer with separate game con
     const footer = page.getByRole('contentinfo', { name: 'String and contributor credits' });
     await expect(footer).toBeVisible();
     await expect(footer).toHaveCSS('background-color', 'rgb(51, 55, 59)');
-    await expect(footer.getByRole('link', { name: 'String Team' })).toHaveAttribute('href', 'https://for.edu.sg/str-bingo-tree');
-    await expect(footer).toContainText('Inspired by Seng Kwang (Physics educator @ TJC)');
+    await expect(footer).toContainText('Inspired by Seng Kwang (Physics educator @ TJC), Part of string.sg');
+    await expect(footer.getByRole('link', { name: 'Seng Kwang (Physics educator @ TJC)' })).toHaveAttribute('href', 'https://id.string.sg/u/sengkwang');
+    await expect(footer).not.toContainText('String Team');
     await expect(footer.getByRole('link', { name: 'Join String' })).toHaveAttribute('href', 'https://id.string.sg/');
     await expect(footer.getByRole('button')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
