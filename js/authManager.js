@@ -1,4 +1,5 @@
 import { getConfig } from "./config.js";
+import { showCheckedResults } from "./live-host.js";
 const SIGN_IN = "https://id.string.sg/login?continue=bingo";
 const isDefaultBoard = () => ["/play", "/play/", "/play.html"].includes(location.pathname);
 const node = (tag, text, className) => {
@@ -154,7 +155,7 @@ export class AuthManager {
       retry.disabled = false;
       if (this.user) {
         dialog.close();
-        if (location.pathname.includes("new.html")) location.reload();
+        if (intent === "demo" || location.pathname.includes("new.html")) location.reload();
         else location.assign("/new.html");
       } else {
         dialog.close();
@@ -280,7 +281,9 @@ export class AuthManager {
       actions.append(preview);
       for (const [label, fn, style] of [
         ["Share", () => this.shareGame(game), "outline"],
-        ["Results", () => this.showGameResults(game.id, game.name), "outline"],
+        ["Results", () => game.checked
+          ? showCheckedResults("/boards/" + encodeURIComponent(game.id), game.name)
+          : this.showGameResults(game.id, game.name), "outline"],
         ["Delete", () => this.deleteGame(game.id), "danger"],
       ]) {
         const b = node("button", label, `btn btn-sm btn-${style}`);

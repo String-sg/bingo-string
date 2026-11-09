@@ -313,3 +313,50 @@ textarea:focus-visible {
   outline: 2px solid #206d55;
   outline-offset: -2px;
 }
+
+.editor-tile, .live-form {
+  display: grid;
+  gap: .55rem;
+}
+
+.editor-tile select, .editor-tile textarea, .live-form input {
+  width: 100%;
+  padding: .55rem;
+  border: 1px solid #777;
+  border-radius: .4rem;
+  font: inherit;
+}
+
+.live-panel {
+  width: min(100% - 2rem, 58rem);
+  margin: 2rem auto;
+  text-align: center;
+}
+
+.live-form {
+  text-align: left;
+  max-width: 30rem;
+  margin: 1rem auto;
+}
+
+.live-form label { display: grid; gap: .35rem; }
+.live-pin { font-size: clamp(3rem, 11vw, 8rem); font-weight: 700; letter-spacing: .08em; }
+.live-roster { display: flex; flex-wrap: wrap; gap: .75rem; justify-content: center; padding: 0; list-style: none; }
+.live-roster li { padding: .25rem .65rem; background: #e5f5f0; color: #162d29; border-radius: .4rem; }
+.live-actions { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; }
+.checked-result { padding: .75rem 0; border-bottom: 1px solid #bbb; overflow-wrap: anywhere; }
+.checked-result .live-actions { justify-content: start; align-items: center; margin-top: .4rem; }
+.bingo-time { font-size: 1.35rem; font-weight: 700; }
+
+.tile-mode {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: fit-content;
+  margin: .15rem auto 0;
+  padding: .1rem .3rem;
+  border-radius: .25rem;
+  background: #fff;
+  color: #193a31;
+  font-size: clamp(.6rem, 10cqw, .85rem);
+}

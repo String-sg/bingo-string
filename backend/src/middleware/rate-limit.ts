@@ -90,3 +90,15 @@ export const createGameLimiter = rateLimit({
   limit: 30,
   store: new PostgresRateLimitStore("create"),
 });
+export const pinLimiter = rateLimit({
+  ...options,
+  limit: 360,
+  message: { error: "Too many join attempts. Please wait a minute and retry." },
+  store: new PostgresRateLimitStore("bingo-pin"),
+});
+export const submissionLimiter = rateLimit({
+  ...options,
+  limit: 2400,
+  message: { error: "Too many submissions. Please wait a minute and retry." },
+  store: new PostgresRateLimitStore("bingo-submit"),
+});

@@ -58,6 +58,12 @@ export class BingoGrid {
 
         cell.appendChild(number);
         cell.appendChild(text);
+        if (challenge?.mode === "typed" || challenge?.mode === "manual") {
+            const badge = document.createElement("span");
+            badge.className = "tile-mode";
+            badge.textContent = challenge.mode === "typed" ? "Typed answer" : "Host check";
+            cell.appendChild(badge);
+        }
 
         return cell;
     }

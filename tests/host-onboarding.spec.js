@@ -92,11 +92,12 @@ for (const size of [3, 5])
     const gp = await guest.newPage();
     await gp.goto(link);
     await expect(gp.locator(".bingo-cell")).toHaveCount(size * size);
-    await gp.getByLabel("Your name", { exact: true }).fill("Guest player");
-    await gp.getByRole("button", { name: "Join Game", exact: true }).click();
+    await gp.getByLabel("Nickname", { exact: true }).fill("Guest player");
+    await gp.getByRole("button", { name: "Join", exact: true }).click();
     await expect(
       gp.getByRole("button", { name: "Host a game", exact: true }),
     ).toBeVisible();
+    await expect(gp.locator(".bingo-cell").first()).toBeVisible();
     await gp.locator(".bingo-cell").first().focus();
     await gp.keyboard.press("Enter");
     await expect(gp.locator("#cameraModal")).toBeVisible();
@@ -112,7 +113,7 @@ for (const size of [3, 5])
     await gp.locator(".bingo-cell").first().click();
     const progress = gp.waitForResponse(
       (response) =>
-        response.url().endsWith("/progress") &&
+        response.url().endsWith("/action") &&
         response.request().method() === "POST",
     );
     await gp
@@ -123,18 +124,13 @@ for (const size of [3, 5])
         buffer: Buffer.from(imageBase64, "base64"),
       });
     await expect(gp.locator(".bingo-cell").first()).toHaveClass(/completed/);
-    expect((await progress).status()).toBe(200);
+    const saved = await progress;
+    expect(saved.status()).toBe(200);
+    expect((await saved.json()).player.tiles["0"]).toBe("done");
     const gameId = new URL(link).pathname.split("/").pop();
-    const results = await page.request.get(`/api/games/${gameId}/results`);
+    const results = await page.request.get(`/api/checked/boards/${gameId}/results`);
     expect(results.status()).toBe(200);
-    const players = await results.json();
-    expect(
-      players.some(
-        (player) =>
-          player.playerName === "Guest player" &&
-          player.progressJson.includes(0),
-      ),
-    ).toBe(true);
+    expect((await results.json()).players.some((player) => player.nickname === "Guest player")).toBe(true);
     await guest.close();
   });
 test("draft survives size changes and reload; partial board cannot publish", async ({

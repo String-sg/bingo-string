@@ -14,17 +14,19 @@ const realFetch = globalThis.fetch;
 globalThis.fetch = async (input, init) => {
   if (String(input) === "https://id.string.sg/api/me") {
     const cookie = new Headers(init?.headers).get("cookie");
+    const other = cookie === `string_session=${"e".repeat(64)}`;
+    const known = other || cookie === `string_session=${"d".repeat(64)}`;
     return new Response(
       JSON.stringify({
         member: {
-          id: "33333333-3333-4333-8333-333333333333",
-          email: "browser-host@example.com",
-          name: "Browser host",
-          googleAccountId: "browser-host-subject",
+          id: other ? "44444444-4444-4444-8444-444444444444" : "33333333-3333-4333-8333-333333333333",
+          email: other ? "other-host@example.com" : "browser-host@example.com",
+          name: other ? "Other host" : "Browser host",
+          googleAccountId: other ? "other-host-subject" : "browser-host-subject",
         },
       }),
       {
-        status: cookie === `string_session=${"d".repeat(64)}` ? 200 : 401,
+        status: known ? 200 : 401,
         headers: { "content-type": "application/json" },
       },
     );

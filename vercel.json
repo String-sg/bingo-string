@@ -1,6 +1,10 @@
 {
     "version": 2,
+    "regions": ["sin1"],
+    "crons": [{ "path": "/api/checked/purge", "schedule": "0 * * * *" }],
     "rewrites": [
+        { "source": "/join", "destination": "/play.html" },
+        { "source": "/host/live/:id", "destination": "/play.html" },
         {
             "source": "/api/(.*)",
             "destination": "/api/index.ts"
