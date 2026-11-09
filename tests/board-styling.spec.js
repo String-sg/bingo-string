@@ -36,6 +36,9 @@ test('default board labels stay readable through photo, bingo and reset', async 
   const labels = cells.locator('.cell-number, .cell-text');
   await expect(cells).toHaveCount(25);
   await expect(cells.nth(12)).toHaveAttribute('aria-pressed', 'true');
+  // Long prompts must not make some rows taller than others.
+  expect(await cells.evaluateAll(items =>
+    new Set(items.map(cell => Math.round(cell.getBoundingClientRect().height))).size)).toBe(1);
   await expectReadable(labels);
 
   await page.waitForFunction(() => window.bingoApp?.sessionId);
@@ -107,7 +110,7 @@ test('the board and editor have one compact String footer with separate game con
     const footer = page.getByRole('contentinfo', { name: 'String and contributor credits' });
     await expect(footer).toBeVisible();
     await expect(footer).toHaveCSS('background-color', 'rgb(51, 55, 59)');
-    await expect(footer).toContainText('Inspired by Seng Kwang (Physics educator @ TJC), Part of string.sg');
+    await expect(footer).toContainText('Inspired by Seng Kwang (Physics educator @ TJC), supported by string.sg');
     await expect(footer.getByRole('link', { name: 'Seng Kwang (Physics educator @ TJC)' })).toHaveAttribute('href', 'https://id.string.sg/u/sengkwang');
     await expect(footer).not.toContainText('String Team');
     await expect(footer.getByRole('link', { name: 'Join String' })).toHaveAttribute('href', 'https://id.string.sg/');
