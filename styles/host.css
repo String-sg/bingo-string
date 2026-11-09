@@ -19,14 +19,38 @@
   align-items: center;
 }
 .brand {
-  font-size: 1.2rem;
-  font-weight: 750;
+  font-family: var(--font-title);
+  font-size: 1.375rem;
+  font-weight: 700;
   color: #173b31;
   text-decoration: none;
+}
+.board-page .host-header {
+  padding: 0 0 1rem;
+  background: transparent;
+  border: 0;
+  gap: 0.5rem;
+}
+.board-page .brand {
+  color: var(--text-primary);
+}
+.board-page .host-header :focus-visible {
+  outline-color: var(--primary-color);
+}
+.board-page .host-header .btn {
+  margin: 0;
+  min-height: 44px;
 }
 .host-page {
   background: #f6f7f2;
   color: #20352d;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+.host-shell :is(h1, h2, h3),
+.host-dialog :is(h1, h2, h3) {
+  font-family: var(--font-title);
 }
 .host-shell {
   max-width: 900px;
@@ -170,12 +194,6 @@ input:focus-visible,
 textarea:focus-visible {
   outline: 3px solid #206d55;
   outline-offset: 3px;
-}
-button.bingo-cell {
-  font: inherit;
-  color: inherit;
-  text-align: center;
-  cursor: pointer;
 }
 .close {
   background: transparent;

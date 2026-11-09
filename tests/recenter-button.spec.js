@@ -259,28 +259,18 @@ test.describe('Recenter Button', () => {
   });
 
   test.describe('Visual regression', () => {
-    test('recenter button should be visible in correct position on mobile', async ({ page }) => {
-      // Set mobile viewport
+    test.use({ hasTouch: true });
+    test('mobile recenter does not cover the board or footer', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
-      
       await page.goto('/');
-      await page.waitForSelector('.bingo-grid');
-      
-      // Wait a moment for styles to load
-      await page.waitForTimeout(500);
-      
-      // Take screenshot to verify button position
-      // The button should be in bottom-right corner
+      await expect(page.locator('.bingo-cell')).toHaveCount(25);
       const recenterBtn = page.locator('#recenterBtn');
+      await expect(recenterBtn).toBeVisible();
       const box = await recenterBtn.boundingBox();
-      
-      if (box) {
-        // Button should be near bottom-right
-        // With fixed positioning at bottom: 20px, right: 20px
-        const viewport = page.viewportSize();
-        expect(box.x).toBeGreaterThan(viewport.width - 100); // Near right edge
-        expect(box.y).toBeGreaterThan(viewport.height - 100); // Near bottom edge
-      }
+      const board = await page.locator('.bingo-grid').boundingBox();
+      const footer = await page.locator('.str-footer').boundingBox();
+      expect(box.y).toBeGreaterThanOrEqual(board.y + board.height);
+      expect(box.y + box.height).toBeLessThanOrEqual(footer.y);
     });
   });
 });
