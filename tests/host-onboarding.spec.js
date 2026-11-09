@@ -44,6 +44,13 @@ test("the account menu keeps host actions reachable on a narrow screen", async (
   await page.goto("/new.html");
   await expect(page.locator("#wizard")).toBeVisible();
   await account.click();
+  await myGames.click();
+  await expect(page).toHaveURL("/play?host=1");
+  await expect(page.getByRole("heading", { name: "My games" })).toBeVisible();
+
+  await page.goto("/new.html");
+  await expect(page.locator("#wizard")).toBeVisible();
+  await account.click();
   await signOut.click();
   await expect(page.getByRole("button", { name: "Continue with String ID" })).toBeVisible();
   await expect(account).toBeHidden();
