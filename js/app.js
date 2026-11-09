@@ -19,6 +19,7 @@ class BingoApp {
         this.sessionId = null;
         this.gameId = null;
         this.playerName = null;
+        document.getElementById('downloadBtn')?.addEventListener('click', () => this.downloadAllImages());
 
         this.init();
     }
@@ -204,12 +205,6 @@ class BingoApp {
         const recenterBtn = document.getElementById('recenterBtn');
         if (recenterBtn) {
             recenterBtn.addEventListener('click', () => this.recenter());
-        }
-
-        // Download all images button
-        const downloadBtn = document.getElementById('downloadBtn');
-        if (downloadBtn) {
-            downloadBtn.addEventListener('click', () => this.downloadAllImages());
         }
 
         // Auth related buttons
@@ -644,6 +639,7 @@ class BingoApp {
     async downloadAllImages() {
         const cellImages = JSON.parse(localStorage.getItem(this.photoStorageKey()) || '{}');
         const imageEntries = Object.entries(cellImages);
+        const challenges = this.bingoGrid?.challenges ?? [];
 
         if (imageEntries.length === 0) {
             alert('No images to download. Complete some challenges first!');
@@ -653,7 +649,7 @@ class BingoApp {
         // For a single image, download directly
         if (imageEntries.length === 1) {
             const [index, imageData] = imageEntries[0];
-            const challenge = this.bingoGrid.challenges[parseInt(index)];
+            const challenge = challenges[parseInt(index)];
             const challengeText = challenge ? challenge.text : `Challenge ${parseInt(index) + 1}`;
             this.downloadSingleImage(imageData, `bingo-${parseInt(index) + 1}-${challengeText.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`);
 
@@ -674,7 +670,7 @@ class BingoApp {
             const zip = new JSZip();
 
             for (const [index, imageData] of imageEntries) {
-                const challenge = this.bingoGrid.challenges[parseInt(index)];
+                const challenge = challenges[parseInt(index)];
                 const challengeText = challenge ? challenge.text : `Challenge ${parseInt(index) + 1}`;
                 const filename = `bingo-${parseInt(index) + 1}-${challengeText.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`;
 
