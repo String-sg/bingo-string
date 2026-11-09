@@ -34,16 +34,10 @@
 }
 
 .landing-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: .55rem;
   color: inherit;
   font: 700 1.25rem/1 var(--landing-display);
   text-decoration: none;
 }
-
-.landing-brand img { display: block; }
-.landing-brand span { border-left: 1px solid #68726e; padding-left: .6rem; }
 
 .landing-nav-link {
   display: inline-flex;
