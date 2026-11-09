@@ -27,7 +27,7 @@ async function expectReadable(labels) {
 }
 
 test('default board labels stay readable through photo, bingo and reset', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/play');
   const cells = page.locator('.bingo-cell');
   const labels = cells.locator('.cell-number, .cell-text');
   await expect(cells).toHaveCount(25);
@@ -83,7 +83,7 @@ test('narrow shared board wraps long prompts and keeps keyboard focus visible', 
 });
 
 test('the board and editor have one compact String footer with separate game controls', async ({ page }) => {
-  for (const path of ['/', '/new.html']) {
+  for (const path of ['/', '/play', '/new.html']) {
     await page.goto(path);
     const footer = page.getByRole('contentinfo', { name: 'String and contributor credits' });
     await expect(footer).toBeVisible();

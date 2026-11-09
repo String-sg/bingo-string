@@ -4,7 +4,7 @@ test.describe('Recenter Button', () => {
   test.describe('Desktop (non-touch devices)', () => {
     test.use({ hasTouch: false, isMobile: false, viewport: { width: 1280, height: 720 } });
     test('should not display recenter button on desktop', async ({ page }) => {
-      await page.goto('/');
+      await page.goto('/play');
       
       // Wait for the page to load
       await page.waitForSelector('.bingo-grid');
@@ -23,7 +23,7 @@ test.describe('Recenter Button', () => {
     });
 
     test('should display recenter button on mobile', async ({ page }) => {
-      await page.goto('/');
+      await page.goto('/play');
       
       // Wait for the page to load
       await page.waitForSelector('.bingo-grid');
@@ -41,7 +41,7 @@ test.describe('Recenter Button', () => {
     });
 
     test('should have correct styling and position', async ({ page }) => {
-      await page.goto('/');
+      await page.goto('/play');
       await page.waitForSelector('.bingo-grid');
       
       const recenterBtn = page.locator('#recenterBtn');
@@ -56,7 +56,7 @@ test.describe('Recenter Button', () => {
     });
 
     test('should recenter grid when clicked', async ({ page }) => {
-      await page.goto('/');
+      await page.goto('/play');
       await page.waitForSelector('.bingo-grid');
       
       const grid = page.locator('.bingo-grid');
@@ -89,7 +89,7 @@ test.describe('Recenter Button', () => {
     });
 
     test('should call TouchManager.recenter() method', async ({ page }) => {
-      await page.goto('/');
+      await page.goto('/play');
       await page.waitForSelector('.bingo-grid');
       
       // Inject a spy to track if recenter was called
@@ -114,7 +114,7 @@ test.describe('Recenter Button', () => {
     });
 
     test('should have accessible button for screen readers', async ({ page }) => {
-      await page.goto('/');
+      await page.goto('/play');
       await page.waitForSelector('.bingo-grid');
       
       const recenterBtn = page.locator('#recenterBtn');
@@ -128,7 +128,7 @@ test.describe('Recenter Button', () => {
     });
 
     test('should maintain grid state after recentering', async ({ page }) => {
-      await page.goto('/');
+      await page.goto('/play');
       await page.waitForSelector('.bingo-grid');
       
       // Get all cells
@@ -158,7 +158,7 @@ test.describe('Recenter Button', () => {
 
   test.describe('TouchManager integration', () => {
     test('should reset transform values correctly', async ({ page }) => {
-      await page.goto('/');
+      await page.goto('/play');
       await page.waitForSelector('.bingo-grid');
       
       // Access TouchManager state through the app
@@ -218,7 +218,7 @@ test.describe('Recenter Button', () => {
     });
 
     test('should maintain API compatibility with reset() method', async ({ page }) => {
-      await page.goto('/');
+      await page.goto('/play');
       await page.waitForSelector('.bingo-grid');
       
       // Set transform state
@@ -262,7 +262,7 @@ test.describe('Recenter Button', () => {
     test.use({ hasTouch: true });
     test('mobile recenter does not cover the board or footer', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
-      await page.goto('/');
+      await page.goto('/play');
       await expect(page.locator('.bingo-cell')).toHaveCount(25);
       const recenterBtn = page.locator('#recenterBtn');
       await expect(recenterBtn).toBeVisible();
@@ -275,7 +275,7 @@ test.describe('Recenter Button', () => {
 
     test('mobile recenter stays on screen while the board is zoomed or panned', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
-      await page.goto('/');
+      await page.goto('/play');
       await expect(page.locator('.bingo-cell')).toHaveCount(25);
       const container = page.locator('.grid-container');
       const recenterBtn = page.locator('#recenterBtn');

@@ -146,7 +146,7 @@ test("results render guest HTML literally and unavailable games never show a def
   context,
 }) => {
   await host(context);
-  await page.goto("/");
+  await page.goto("/play");
   await page.evaluate(() =>
     window.bingoApp.authManager.renderResultsModal("Test", [
       { playerName: "<img src=x onerror=alert(1)>", isCompleted: false },
@@ -260,7 +260,7 @@ test("session expiry during creation preserves prompts and offers login", async 
 test("saved photos remain isolated per game and player session", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/play");
   await page.waitForFunction(
     () =>
       window.bingoApp?.sessionId && window.bingoApp?.bingoGrid?.cells.length,
@@ -288,4 +288,39 @@ test("saved photos remain isolated per game and player session", async ({
   expect(result.firstExists && result.secondEmpty && result.thirdEmpty).toBe(
     true,
   );
+});
+
+test("homepage offers guest play without starting a session", async ({ page }) => {
+  const apiCalls = [];
+  page.on("request", request => {
+    if (new URL(request.url()).pathname.startsWith("/api/")) apiCalls.push(request.url());
+  });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Play bingo with your group.");
+  await expect(page.getByRole("heading", { name: "Meetup bingo" })).toBeVisible();
+  expect(apiCalls).toEqual([]);
+  await page.getByRole("link", { name: "Play a board" }).click();
+  await expect(page).toHaveURL("/play");
+  await expect(page.locator(".bingo-cell")).toHaveCount(25);
+});
+
+test("homepage resumes the host editor after String ID returns to the root", async ({ page, context, baseURL }) => {
+  await page.goto("/");
+  await page.getByRole("main").getByRole("link", { name: "Host a game" }).click();
+  await page.getByRole("button", { name: "Continue with String ID" }).click();
+  await page.keyboard.press("Escape");
+  await page.getByRole("link", { name: "String Bingo" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Play bingo with your group.");
+
+  await page.getByRole("main").getByRole("link", { name: "Host a game" }).click();
+  await page.getByRole("button", { name: "Continue with String ID" }).click();
+  await page.route("https://id.string.sg/login?continue=bingo", async route => {
+    await host(context);
+    await route.fulfill({ status: 302, headers: { location: baseURL + "/" } });
+  });
+  await page.getByRole("link", { name: "Continue with String ID" }).click();
+  await expect(page.locator("#wizard")).toBeVisible();
+  await expect(page).toHaveURL("/new.html");
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Play bingo with your group.");
 });

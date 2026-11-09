@@ -6,8 +6,12 @@
             "destination": "/api/index.ts"
         },
         {
-            "source": "/play/(.*)",
-            "destination": "/index.html"
+            "source": "/play/:path*",
+            "destination": "/play.html"
+        },
+        {
+            "source": "/:email([^/]+(?:@|%40)[^/]+)/:gameId",
+            "destination": "/play.html"
         }
     ],
     "functions": {

@@ -1,124 +1,75 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>String - Bingo</title>
-    <meta name="description" content="Complete String challenges and get BINGO! An interactive team bonding game.">
-    <meta name="keywords" content="bingo, game, string, interactive, challenges, team bonding">
-    <link rel="stylesheet" href="/styles/main.css">
-    <link rel="stylesheet" href="/styles/host.css">
-    <link rel="stylesheet" href="/styles/string-footer.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>String Bingo · Play bingo with your group</title>
+  <meta name="description" content="Try the String Bingo board or create one for your class, team or meetup. Share a link so everyone can play.">
+  <link rel="canonical" href="https://bingo.string.sg/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="/styles/landing.css">
+  <link rel="stylesheet" href="/styles/string-footer.css">
+  <script type="module" src="/js/landing.js"></script>
 </head>
-
-<body class="board-page">
-    <header class="host-header">
-      <a href="/" class="brand">String Bingo</a>
-      <nav aria-label="Host navigation"><button type="button" class="btn btn-outline" id="myGamesBtn" hidden>My games</button>
-      <button type="button" class="btn btn-primary" id="hostGameBtn">Host a game</button>
-      <span id="hostIdentity" hidden><span id="hostName"></span> <button type="button" class="btn btn-outline" id="stringLogoutBtn">Sign out of String ID</button></span></nav>
-    </header>
-
-    <main aria-label="Bingo board">
-        <div class="grid-container">
-            <div class="bingo-grid" id="bingoGrid">
-                <!-- Grid will be populated by JavaScript -->
-            </div>
-        </div>
-        <div class="footer">
-            <div class="button-row">
-                <button type="button" class="btn-recenter" id="recenterBtn" title="Recenter grid" aria-label="Recenter grid to original position">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-                        <path d="M12 2V6M12 18V22M2 12H6M18 12H22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                </button>
-                <button class="btn btn-secondary" id="resetBtn">Reset</button>
-                <button class="btn btn-primary" id="downloadBtn">Download Images</button>
-            </div>
-        </div>
-    </main>
-
-    <!-- Options Modal -->
-    <div id="optionsModal" class="modal">
-        <div class="modal-content">
-            <button type="button" class="close" aria-label="Close dialog">&times;</button>
-            <h2>Complete Challenge</h2>
-            <button class="btn btn-primary" id="cameraBtn">📷 Take Photo</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📁 Upload
-                Image</button>
-            <input type="file" id="fileInput" accept="image/*" style="display: none;">
-        </div>
+<body class="landing">
+  <header class="landing-header">
+    <div class="landing-wrap landing-nav">
+      <a class="landing-brand" href="/" aria-label="String Bingo home">
+        <img src="/string-footer/string-logo.svg" alt="" width="92" height="32">
+        <span>Bingo</span>
+      </a>
+      <a class="landing-nav-link" href="/new.html">Host a game <span aria-hidden="true">→</span></a>
     </div>
+  </header>
 
-    <!-- Camera Modal -->
-    <div id="cameraModal" class="modal">
-        <div class="modal-content">
-            <button type="button" class="close" aria-label="Close dialog">&times;</button>
-            <h2>Take Photo</h2>
-            <div class="camera-container">
-                <video id="video" autoplay playsinline></video>
-            </div>
-            <div class="camera-controls">
-                <button class="btn btn-primary" id="captureBtn">📸 Capture</button>
-                <button class="btn btn-secondary" id="switchCameraBtn">🔄 Switch Camera</button>
-                <button class="btn btn-outline" id="uploadBtn">📁 Upload Image</button>
-                <input type="file" id="cameraFileInput" accept="image/*" style="display: none;">
-            </div>
-        </div>
-    </div>
-
-
-
-    <!-- Bingo Modal -->
-    <div id="bingoModal" class="modal">
-        <div class="modal-content">
-            <button type="button" class="close" aria-label="Close dialog">&times;</button>
-            <h2>🎉 BINGO! 🎉</h2>
-            <p>Congratulations! You've completed a line!</p>
-            <p>You have completed a line of challenges.</p>
-            <button class="btn btn-primary" id="celebrateBtn">🎊 Celebrate!</button>
-        </div>
-    </div>
-
-    <div id="adminDashboard" class="admin-dashboard" style="display: none;">
-        <h1>My games</h1>
-        <p>Create a board and share it. Your players do not need an account.</p>
-        <div id="gamesState" aria-live="polite"></div>
-        <div>
-            <button class="btn btn-primary admin-create-btn" id="createNewGameBtn">
-                <span class="btn-icon">+</span>
-                Create New Game
-            </button>
+  <main>
+    <section class="landing-hero" aria-labelledby="landing-title">
+      <div class="landing-wrap landing-hero-inner">
+        <div class="landing-intro">
+          <h1 id="landing-title">Play bingo<br class="landing-title-break"> with your group.</h1>
+          <p>Try the String board or make one for your class, team or meetup. Share a link so everyone can play.</p>
+          <div class="landing-actions">
+            <a class="landing-button landing-button-primary" href="/play">Play a board <span aria-hidden="true">→</span></a>
+            <a class="landing-button landing-button-outline" href="/new.html">Host a game</a>
+          </div>
+          <p class="landing-note">Players can join without an account.</p>
         </div>
 
-        <div class="admin-content">
-            <div class="games-section">
-                <div class="empty-state" id="emptyState">
-                    <h2>No games yet</h2>
-                    <p>Create your first bingo game to get started</p>
-                    <button class="btn btn-primary" id="createNewGameBtn2">
-                        <span class="btn-icon">+</span>
-                        Create New Game
-                    </button>
-                </div>
+        <figure class="landing-example">
+          <figcaption>
+            <span>Example board</span>
+            <span>3 × 3</span>
+          </figcaption>
+          <h2>Meetup bingo</h2>
+          <ol class="landing-board">
+            <li class="landing-complete"><span aria-hidden="true">✓</span>Meet someone new</li>
+            <li class="landing-complete"><span aria-hidden="true">✓</span>Share a tool you use</li>
+            <li class="landing-complete"><span aria-hidden="true">✓</span>Swap a teaching tip</li>
+            <li><span aria-hidden="true">4</span>Find a shared interest</li>
+            <li><span aria-hidden="true">5</span>Ask a good question</li>
+            <li><span aria-hidden="true">6</span>Try a new idea</li>
+            <li><span aria-hidden="true">7</span>Help someone out</li>
+            <li><span aria-hidden="true">8</span>Learn a new shortcut</li>
+            <li><span aria-hidden="true">9</span>Share something you made</li>
+          </ol>
+          <p class="landing-board-status"><span aria-hidden="true"></span> One line complete</p>
+        </figure>
+      </div>
+    </section>
 
-                <div class="games-list" id="gamesList" style="display: none;">
-
-                </div>
-            </div>
-        </div>
-
-        <div class="admin-footer">
-            <button class="btn btn-outline" id="backToGameBtn">← Back to Game</button>
-        </div>
-    </div>
-
-    <!-- Status Messages -->
-    <div class="status" id="status"></div>
-
-    <script type="module" src="/js/app.js"></script>
+    <section class="landing-how" aria-labelledby="how-title">
+      <div class="landing-wrap">
+        <h2 id="how-title">How it works</h2>
+        <ol class="landing-steps">
+          <li><span aria-hidden="true">01</span><h3>Pick a board</h3><p>Play the ready-made board, or sign in with String ID to create a 3 × 3 or 5 × 5 board.</p></li>
+          <li><span aria-hidden="true">02</span><h3>Share the link</h3><p>Send your game link to the group. Players can open it on their phones.</p></li>
+          <li><span aria-hidden="true">03</span><h3>Complete a line</h3><p>Do the challenges and add photos to mark your squares. Fill a row, column or diagonal to get Bingo.</p></li>
+        </ol>
+      </div>
+    </section>
+  </main>
 <!-- string-footer:start -->
 <footer class="str-footer str-footer--compact" aria-label="String and contributor credits">
   <div class="str-footer__compact-inner">
@@ -134,5 +85,4 @@
 </footer>
 <!-- string-footer:end -->
 </body>
-
 </html>
