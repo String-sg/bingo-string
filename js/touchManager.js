@@ -95,6 +95,9 @@ export class TouchManager {
 
     updateTransform() {
         this.grid.style.transform = `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`;
+        // Lets CSS float the Recenter button only while the board is zoomed or panned.
+        const moved = this.scale !== 1 || this.translateX !== 0 || this.translateY !== 0;
+        this.gridContainer.classList.toggle('is-transformed', moved);
     }
 
     recenter() {
