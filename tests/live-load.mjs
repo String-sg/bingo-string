@@ -46,6 +46,7 @@ try {
   }));
   const lobby = await request(path + "/lobby", { host: hostCookie });
   assert.equal(lobby.body.players.length, 100);
+  console.log("100 synthetic students joined the same lobby.");
   startAt = performance.now();
   assert.equal((await control(id, "start")).body.status, "playing");
   await Promise.all(students.map(async (student, i) => {
@@ -72,6 +73,7 @@ try {
     const again = await play(student, "photo", 6, undefined, student.finalRequest);
     assert.equal(again.player.completedAt, student.firstResult.player.completedAt);
   }));
+  console.log("Final moves, host approvals and reconnects completed. Keeping 100 students active for five minutes.");
   await pause(Math.max(0, 300000 - (performance.now() - startAt)));
   endAt = performance.now();
   assert.equal((await control(id, "end")).body.status, "ended");

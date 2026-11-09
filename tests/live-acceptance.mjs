@@ -26,7 +26,9 @@ try {
   const lobbyUrl = teacher.url();
   await teacher.reload();
   assert.equal(teacher.url(), lobbyUrl);
-  const pin = (await teacher.getByLabel("Game PIN").textContent()).trim();
+  const pinLabel = teacher.getByLabel("Game PIN");
+  await expect(pinLabel).toHaveText(/^\d{6}$/);
+  const pin = (await pinLabel.textContent()).trim();
   for (const [page, nickname] of [[first, "Blue Owl"], [second, "Green Fox"]]) {
     await page.goto(target + "/join");
     await page.getByLabel("Game PIN").fill(pin);
@@ -153,6 +155,7 @@ try {
     await teacher.getByLabel("Accepted answers for challenge 1", { exact: true }).fill("100");
     await teacher.getByRole("button", { name: "Continue", exact: true }).click();
     await teacher.getByRole("button", { name: "Create game", exact: true }).click();
+    await expect(teacher.getByRole("heading", { name: "Your game is ready" })).toBeVisible();
     const link = await teacher.getByLabel("Game link", { exact: true }).inputValue();
     const boardId = new URL(link).pathname.split("/").pop();
     const created = (await request(`/games/${boardId}/play`)).body;
