@@ -107,7 +107,8 @@ class BingoApp {
     async loadCustomGame(gameId) {
         try {
             console.log(`🎮 Loading custom game: ${gameId}`);
-            const response = await fetch(`${(await getConfig()).API_BASE_URL}/games/${gameId}/play`);
+            const preview = new URLSearchParams(location.search).has('preview');
+            const response = await fetch(`${(await getConfig()).API_BASE_URL}/games/${gameId}/play${preview ? '?preview=1' : ''}`);
 
             if (!response.ok) {
                 throw new Error('Game not found');
@@ -132,7 +133,7 @@ class BingoApp {
             await this.setupGrid(game.challengesJson, game.gridSize || 5);
 
             // Initialize session
-            if (!new URLSearchParams(location.search).has('preview')) {
+            if (!preview) {
                 if (game.checked) {
                     this.checked = new CheckedPlayer(this, gameId);
                     await this.checked.connect();

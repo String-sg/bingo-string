@@ -4,7 +4,7 @@ import { hostLimiter, createGameLimiter } from '../middleware/rate-limit';
 import prisma from '../lib/prisma';
 import { firstLine, parseChallenges, publicChallenges } from '../lib/checked-bingo';
 import { canEditGame, lockGameForPlay, resultsVersion, validResultsVersion } from '../lib/game-management';
-import { authenticateString, optionalAuth, AuthenticatedRequest, trustedOrigin } from '../middleware/auth';
+import { authenticateString, optionalAuth, resolveMember, AuthenticatedRequest, trustedOrigin } from '../middleware/auth';
 
 const router = express.Router();
 const validName=(v:unknown):v is string=>typeof v==='string' && v.trim().length>0 && v.length<=100;
@@ -210,7 +210,7 @@ router.delete('/:id', hostLimiter, trustedOrigin, authenticateString, async (req
   }
 });
 
-// GET /api/games/:id/play - Get game for playing (public endpoint)
+// GET /api/games/:id/play - Get the public board or an owner-only private preview
 router.get('/:id/play', async (req, res) => {
   res.set('Cache-Control', 'no-store');
   try {
@@ -225,6 +225,7 @@ router.get('/:id/play', async (req, res) => {
         checked: true,
         gridSize: true,
         isPublic: true,
+        creatorId: true,
         updatedAt: true,
         creator: {
           select: {
@@ -239,10 +240,13 @@ router.get('/:id/play', async (req, res) => {
     }
 
     if (!game.isPublic) {
-      return res.status(403).json({ error: 'This game is private' });
+      const viewer = req.query.preview === '1' ? await resolveMember(req).catch(() => null) : null;
+      if (viewer?.id !== game.creatorId)
+        return res.status(403).json({ error: 'This game is private' });
     }
 
-    res.json({ ...game, challengesJson: publicChallenges(game.challengesJson) });
+    const { creatorId, challengesJson, ...board } = game;
+    res.json({ ...board, challengesJson: publicChallenges(challengesJson) });
   } catch (error) {
     console.error('Error fetching game for play:', error);
     res.status(500).json({ error: 'Failed to fetch game' });

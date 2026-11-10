@@ -691,6 +691,17 @@ html {
     flex: 0 0 44px;
     min-height: 44px;
     padding: 0;
+    background: transparent;
+    color: var(--text-primary);
+}
+
+.game-card-heading .game-card-delete:is(:hover, :active) {
+    background: rgba(244, 67, 54, 0.12);
+    color: #ff8178;
+}
+
+.game-card-heading .game-card-delete:focus-visible {
+    outline-color: var(--primary-color);
 }
 
 .game-actions .game-card-preview {

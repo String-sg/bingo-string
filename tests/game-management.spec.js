@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { test, expect } from "@playwright/test";
 
-async function createBoard(context, baseURL, size, checked = true) {
+async function createBoard(context, baseURL, size, checked = true, isPublic = true) {
   await context.addCookies([{ name: "string_session", value: "d".repeat(64), url: baseURL }]);
   const response = await context.request.post("/api/games", {
     headers: { origin: baseURL },
@@ -9,6 +9,7 @@ async function createBoard(context, baseURL, size, checked = true) {
       name: `Management ${size} ${randomUUID()}`,
       gridSize: size,
       checked,
+      isPublic,
       challenges: Array.from({ length: size * size }, (_, i) => ({
         id: `q${i}`, text: `Prompt ${i + 1}`,
         mode: i === 0 ? "typed" : i === 1 ? "manual" : "photo",
@@ -96,6 +97,30 @@ test("a stale editor saves a copy and Clear results only resets the original sco
   expect((await context.request.get(`${copyPath}/state`, { headers: playerHeaders })).status()).toBe(200);
   expect((await context.request.get(`/api/games/${game.id}/play`)).status()).toBe(200);
   expect((await (await context.request.get(`/api/games/${game.id}/editor`)).json()).canEdit).toBe(true);
+});
+
+test("only the owner can preview a private board without creating a player entry", async ({ page, context, browser, baseURL }) => {
+  const game = await createBoard(context, baseURL, 3, true, false);
+  const path = `/api/games/${game.id}/play`;
+  await page.goto("/play?host=1");
+  const loaded = page.waitForResponse((response) => response.url().endsWith(path + "?preview=1"));
+  await card(page, game.name).getByRole("link", { name: "Preview", exact: true }).click();
+  const preview = await loaded;
+  expect(preview.status()).toBe(200);
+  expect((await preview.json()).challengesJson[0]).not.toHaveProperty("aliases");
+  await expect(page.locator(".bingo-cell")).toHaveCount(9);
+  await expect(page.getByText("Board preview — no player entry is recorded.")).toBeVisible();
+  expect((await (await context.request.get(`/api/checked/boards/${game.id}/results`)).json()).players).toEqual([]);
+  expect((await context.request.get(path)).status()).toBe(403);
+
+  const guest = await browser.newContext({ baseURL });
+  try {
+    expect((await guest.request.get(path + "?preview=1")).status()).toBe(403);
+    await guest.addCookies([{ name: "string_session", value: "e".repeat(64), url: baseURL }]);
+    expect((await guest.request.get(path + "?preview=1")).status()).toBe(403);
+  } finally {
+    await guest.close();
+  }
 });
 
 test("clear an older photo-only scorecard from My games", async ({ page, context, baseURL }) => {

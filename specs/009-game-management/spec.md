@@ -2,7 +2,7 @@
 
 ## My games
 
-Each card has a white trash icon on a red button in its top-right corner. The four equal controls below the title read **Share**, **Edit**, **Results**, and **Preview** in row order. Share uses mint. Preview is last and uses a quieter outline. The icon has the board name in its accessible label and still requires confirmation.
+Each card has a white trash icon in its top-right corner that turns red on hover or press. The four equal controls below the title read **Share**, **Edit**, **Results**, and **Preview** in row order. Share uses mint. Preview is last and uses a quieter outline. It opens private boards for their owner and records no player entry. The delete icon names the board for screen readers and requires confirmation.
 
 ## Edit
 
@@ -26,3 +26,4 @@ Each card has a white trash icon on a red button in its top-right corner. The fo
 | Clear a live scorecard while waiting or playing, then End and clear it. | The first attempts are rejected. After End, only the selected scorecard empties and its PIN stays closed. |
 | Try to edit or clear as a guest or another owner, submit a stale editor, or retry a clear after another student joins. | Unauthorized requests and stale writes cannot change existing data. |
 | Open My games on mobile and desktop. | The four main actions stay aligned and tappable. Preview is last and outlined. Delete remains an icon with a confirmation. |
+| Preview a private board as its owner, then open the same preview as a guest or another host. | The owner sees the board without answer keys or a player entry. The other viewers cannot see it. |

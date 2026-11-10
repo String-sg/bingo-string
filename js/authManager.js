@@ -271,7 +271,7 @@ export class AuthManager {
       const card = node("article", undefined, "game-card");
       const id = encodeURIComponent(game.id);
       const heading = node("div", undefined, "game-card-heading");
-      const remove = node("button", undefined, "btn btn-danger game-card-delete");
+      const remove = node("button", undefined, "btn game-card-delete");
       remove.type = "button";
       remove.setAttribute("aria-label", `Delete ${game.name}`);
       remove.title = "Delete game";
