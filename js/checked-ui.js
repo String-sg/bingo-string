@@ -20,6 +20,21 @@ export function statusText(text = "") {
   return node;
 }
 
+export function clearResultsButton(scope, clear, status) {
+  const control = button("Clear results", async () => {
+    if (!confirm(`Clear saved progress and results for ${scope}? This cannot be undone.`)) return;
+    control.disabled = true;
+    try {
+      await clear();
+    } catch (error) {
+      status.textContent = error.message;
+    } finally {
+      control.disabled = false;
+    }
+  }, "btn btn-danger");
+  return control;
+}
+
 export function panel() {
   document.querySelector(".grid-container").hidden = true;
   document.querySelector("main .footer").hidden = true;

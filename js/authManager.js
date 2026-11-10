@@ -1,5 +1,6 @@
 import { getConfig } from "./config.js";
 import { showCheckedResults } from "./live-host.js";
+import { clearResultsButton, statusText } from "./checked-ui.js";
 import { copyLink } from "./copy-link.js";
 const SIGN_IN = "https://id.string.sg/login?continue=bingo";
 const isDefaultBoard = () => ["/play", "/play/", "/play.html"].includes(location.pathname);
@@ -160,7 +161,7 @@ export class AuthManager {
         else location.assign("/new.html");
       } else {
         dialog.close();
-        this.showAuthModal();
+        this.showAuthModal(intent);
       }
     };
     dialog.append(retry);
@@ -268,30 +269,9 @@ export class AuthManager {
     empty.style.display = games.length ? "none" : "block";
     for (const game of games) {
       const card = node("article", undefined, "game-card");
-      card.append(
-        node("h3", game.name),
-        node(
-          "p",
-          `${game.gridSize} × ${game.gridSize} · ${new Date(game.updatedAt).toLocaleDateString()}`,
-          "game-meta",
-        ),
-      );
-      const actions = node("div", undefined, "game-actions");
-      const preview = node("a", "Preview", "btn btn-outline");
-      preview.href = `/play/${encodeURIComponent(game.id)}?preview=1`;
-      actions.append(preview);
-      for (const [label, fn, style] of [
-        ["Share", () => this.shareGame(game), "primary"],
-        ["Results", () => game.checked
-          ? showCheckedResults("/boards/" + encodeURIComponent(game.id), game.name)
-          : this.showGameResults(game.id, game.name), "outline"],
-      ]) {
-        const b = node("button", label, `btn btn-${style}`);
-        b.type = "button";
-        b.onclick = fn;
-        actions.append(b);
-      }
-      const remove = node("button", undefined, "btn btn-danger");
+      const id = encodeURIComponent(game.id);
+      const heading = node("div", undefined, "game-card-heading");
+      const remove = node("button", undefined, "btn game-card-delete");
       remove.type = "button";
       remove.setAttribute("aria-label", `Delete ${game.name}`);
       remove.title = "Delete game";
@@ -301,8 +281,23 @@ export class AuthManager {
           <path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m5 4v6m4-6v6" />
         </svg>`;
       remove.onclick = () => this.deleteGame(game.id);
-      actions.append(remove);
-      card.append(actions);
+      heading.append(node("h3", game.name), remove);
+      const meta = node("p", `${game.gridSize} × ${game.gridSize} · ${new Date(game.updatedAt).toLocaleDateString()}`, "game-meta");
+      const actions = node("div", undefined, "game-actions");
+      const share = node("button", "Share", "btn btn-primary");
+      share.type = "button";
+      share.onclick = () => this.shareGame(game);
+      const edit = node("a", "Edit", "btn btn-outline");
+      edit.href = `/new.html?edit=${id}`;
+      const results = node("button", "Results", "btn btn-outline");
+      results.type = "button";
+      results.onclick = () => game.checked
+        ? showCheckedResults("/boards/" + id, game.name)
+        : this.showGameResults(game.id, game.name);
+      const preview = node("a", "Preview", "btn btn-outline game-card-preview");
+      preview.href = `/play/${id}?preview=1`;
+      actions.append(share, edit, results, preview);
+      card.append(heading, meta, actions);
       list.append(card);
     }
   }
@@ -336,16 +331,24 @@ export class AuthManager {
     d.showModal();
   }
   async showGameResults(id, name) {
-    const response = await fetch(
-      `${this.config.API_BASE_URL}/games/${encodeURIComponent(id)}/results`,
-    );
+    const path = `${this.config.API_BASE_URL}/games/${encodeURIComponent(id)}/results`;
+    const response = await fetch(path, { cache: "no-store" });
     if (!response.ok) {
       this.showError("Could not load results. Retry or sign in again.");
       return;
     }
-    this.renderResultsModal(name, await response.json());
+    const version = response.headers.get("X-Bingo-Results-Version");
+    this.renderResultsModal(name, await response.json(), async () => {
+      const cleared = await fetch(path + "/clear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version }),
+      });
+      if (!cleared.ok) throw new Error((await cleared.json().catch(() => ({}))).error || "Could not clear results. Please retry.");
+      await this.showGameResults(id, name);
+    });
   }
-  renderResultsModal(name, sessions) {
+  renderResultsModal(name, sessions, clear) {
     const d = node("dialog", undefined, "host-dialog");
     d.setAttribute("aria-label", "Game results");
     d.append(node("h2", `Results: ${name}`));
@@ -370,7 +373,15 @@ export class AuthManager {
         row.append(node("td", value));
       table.append(row);
     }
-    d.append(table);
+    const status = statusText();
+    d.append(table, status);
+    if (sessions.length && clear) {
+      d.append(clearResultsButton("this board’s shared link", async () => {
+        await clear();
+        d.close();
+        d.remove();
+      }, status));
+    }
     const close = node("button", "Close", "btn btn-secondary");
     close.onclick = () => {
       d.close();

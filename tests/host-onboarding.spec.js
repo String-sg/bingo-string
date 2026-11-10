@@ -223,6 +223,8 @@ test("game card actions match in size and the trash icon requires confirmation",
   const card = page.getByRole("article").filter({ hasText: game.name });
   const remove = card.getByRole("button", { name: `Delete ${game.name}`, exact: true });
   await expect(remove.locator("svg")).toHaveCSS("stroke", "rgb(255, 255, 255)");
+  await expect(card.getByRole("link", { name: "Preview", exact: true })).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  expect(await card.locator(".game-actions > .btn").allTextContents()).toEqual(["Share", "Edit", "Results", "Preview"]);
   const sizes = await card.locator(".game-actions > .btn").evaluateAll((actions) => actions.map((action) => {
     const { width, height } = action.getBoundingClientRect();
     return { width, height };
