@@ -38,7 +38,9 @@ test("the account menu keeps host actions reachable on a narrow screen", async (
   await expect(account).toBeFocused();
   await account.click();
   await myGames.click();
-  await expect(page.getByRole("heading", { name: "My games" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "My games", exact: true })).toBeInViewport({ ratio: 1 });
+  await expect(page.getByText("Create a board and share it.", { exact: false })).toBeInViewport({ ratio: 1 });
+  await expect(page.locator("#createNewGameBtn")).toBeInViewport({ ratio: 1 });
   await expect(myGames).toBeHidden();
 
   await page.goto("/new.html");

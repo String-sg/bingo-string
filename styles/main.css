@@ -567,9 +567,6 @@ html {
 .admin-dashboard {
     background: var(--background-color);
     min-height: 100vh;
-    padding: 0;
-    margin: -30px -20px -20px -20px;
-    /* Remove body padding when in admin mode */
 }
 
 .admin-header {
@@ -594,9 +591,7 @@ html {
 }
 
 .admin-create-btn {
-    position: absolute;
-    top: 40px;
-    right: 20px;
+    margin-inline: 0;
     background: var(--text-dark);
     color: var(--primary-color);
     border: 2px solid var(--text-dark);
@@ -618,7 +613,7 @@ html {
 }
 
 .admin-content {
-    padding: 40px 20px;
+    padding-block: 40px;
     max-width: 1200px;
     margin: 0 auto;
 }
@@ -742,14 +737,13 @@ html {
     }
 
     .admin-create-btn {
-        position: static;
         margin-top: 20px;
         width: 100%;
         justify-content: center;
     }
 
     .admin-content {
-        padding: 30px 20px;
+        padding-block: 30px;
     }
 
     .empty-state {
