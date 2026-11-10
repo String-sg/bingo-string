@@ -673,6 +673,37 @@ html {
     gap: 8px;
 }
 
+.game-card-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.game-card-heading h3 {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.game-card-heading .game-card-delete {
+    display: grid;
+    place-items: center;
+    flex: 0 0 44px;
+    min-height: 44px;
+    padding: 0;
+}
+
+.game-actions .game-card-preview {
+    background: transparent;
+    border-color: #a9b0b1;
+    color: var(--text-secondary);
+}
+
+.game-actions .game-card-preview:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+}
+
 .game-actions > .btn {
     display: grid;
     place-items: center;

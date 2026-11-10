@@ -60,6 +60,7 @@ try {
   await expect(first.getByText("Waiting for check", { exact: true })).toBeVisible();
   await expect(first.getByRole("button", { name: "Show Bingo time" })).toBeHidden();
   await teacher.getByRole("button", { name: "Private results" }).click();
+  await expect(teacher.getByRole("button", { name: "Clear results" })).toBeHidden();
   await expect(teacher.getByText("Show a triangle · <paper triangle>", { exact: true })).toBeVisible();
   await teacher.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(first.locator("#bingoTime")).toBeVisible();
@@ -96,9 +97,16 @@ try {
   assert.match(savedPhoto.suggestedFilename(), /^bingo-1-.*\.png$/);
   assert.equal(await savedPhoto.failure(), null);
   await request("/checked/join", { token: guest(), data: { pin, nickname: "Late pupil" }, status: 410 });
+  await teacher.getByRole("button", { name: "Private results" }).click();
+  await expect(teacher.getByRole("heading", { name: "Blue Owl", exact: true })).toBeVisible();
+  teacher.once("dialog", (dialog) => dialog.accept());
+  await teacher.getByRole("button", { name: "Clear results" }).click();
+  await expect(teacher.getByText("No players yet.", { exact: true })).toBeVisible();
+  await expect(teacher.getByText("0 joined", { exact: true })).toBeVisible();
+  await request("/checked/join", { token: guest(), data: { pin, nickname: "Still closed" }, status: 410 });
   await teacher.goto(target + "/play");
   await expect(teacher.locator(".bingo-cell")).toHaveCount(25);
-  console.log("PASS two-phone rehearsal, including offline photo, owner approval, timestamp, reload, reset, End and photo download");
+  console.log("PASS two-phone rehearsal, including offline photo, owner approval, timestamp, reload, reset, End, photo download and clearing an ended scorecard");
 
   const board = await request("/games/bingodemoboard/play");
   const detail = await request("/games/bingodemoboard");

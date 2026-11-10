@@ -95,7 +95,7 @@ export class CheckedPlayer {
       const enteredPin = pin.value;
       try {
         const data = await checkedRequest(this.live ? "/join" : this.path + "/join", {
-          token: this.token, data: { nickname: nickname.value, ...(this.live ? { pin: enteredPin } : {}) },
+          token: this.token, data: { nickname: nickname.value, ...(this.live ? { pin: enteredPin } : { boardVersion: this.app.boardVersion }) },
         });
         if (this.live) {
           this.path = "/rounds/" + encodeURIComponent(data.roundId);
@@ -108,6 +108,7 @@ export class CheckedPlayer {
         await this.apply(data);
         this.schedule();
       } catch (error) {
+        if (!this.live && error.status === 409) return location.reload();
         this.status.textContent = error.message;
       } finally {
         join.disabled = false;

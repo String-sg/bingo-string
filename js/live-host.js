@@ -1,5 +1,5 @@
 import { renderSVG } from "uqr";
-import { button, checkedRequest, el, panel, singaporeTime, statusText } from "./checked-ui.js";
+import { button, checkedRequest, clearResultsButton, el, panel, singaporeTime, statusText } from "./checked-ui.js";
 
 const modeLabel = { photo: "Photo (on player’s device)", typed: "Typed answer", manual: "Host check", free: "Free centre" };
 const studentLink = () => {
@@ -61,7 +61,7 @@ export async function openLobby(id, auth) {
   const actions = el("div", undefined, "live-actions");
   const start = button("Start", () => control("start"));
   const end = button("End session", () => control("end"), "btn btn-secondary");
-  const results = button("Private results", () => showCheckedResults(path, title.textContent), "btn btn-outline");
+  const results = button("Private results", () => showCheckedResults(path, title.textContent, refresh), "btn btn-outline");
   actions.append(start, end, results);
   actions.hidden = true;
   container.append(title, join, pin, scan, count, roster, actions, status);
@@ -121,23 +121,33 @@ export async function openLobby(id, auth) {
   await poll();
 }
 
-export async function showCheckedResults(path, name) {
+export async function showCheckedResults(path, name, refreshLobby) {
   const dialog = el("dialog", undefined, "host-dialog checked-results");
   dialog.setAttribute("aria-label", "Game results");
   const status = statusText();
   const content = el("div");
   const refresh = button("Refresh results", load, "btn btn-outline");
   const close = button("Close", () => dialog.close(), "btn btn-secondary");
-  dialog.append(el("h2", "Results · " + name), status, content, refresh, close);
+  const live = path.startsWith("/rounds/");
+  let version;
+  const clear = clearResultsButton(live ? "this ended live session" : "this board’s shared link", async () => {
+    await checkedRequest(path + "/results/clear", { data: { version } });
+    await load();
+    if (refreshLobby) await refreshLobby();
+  }, status);
+  dialog.append(el("h2", "Results · " + name), status, content, refresh, close, clear);
   document.body.append(dialog);
   dialog.addEventListener("close", () => dialog.remove());
   dialog.showModal();
 
   async function load() {
     refresh.disabled = true;
+    clear.hidden = true;
     status.textContent = "Loading results…";
     try {
-      const { players } = await checkedRequest(path + "/results");
+      const { players, status: sessionStatus, clearVersion } = await checkedRequest(path + "/results");
+      version = clearVersion;
+      clear.hidden = !version || !players.length || (live && sessionStatus !== "ended");
       status.textContent = players.length ? "" : "No players yet.";
       const rows = players.map((player) => {
         const row = el("section", undefined, "checked-result");

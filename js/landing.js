@@ -4,7 +4,10 @@ if (new URLSearchParams(location.search).get("host") === "1") {
 } else {
   try {
     const intent = sessionStorage.getItem("bingo:host-intent");
-    if (["create", "games", "demo"].includes(intent)) {
+    if (intent?.startsWith("edit:")) {
+      sessionStorage.removeItem("bingo:host-intent");
+      location.replace("/new.html?edit=" + encodeURIComponent(intent.slice(5)));
+    } else if (["create", "games", "demo"].includes(intent)) {
       sessionStorage.removeItem("bingo:host-intent");
       location.replace(intent === "create" ? "/new.html" : intent === "demo" ? "/play" : "/play?host=1");
     }
