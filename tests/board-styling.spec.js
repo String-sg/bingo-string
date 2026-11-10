@@ -121,9 +121,15 @@ test('the board and editor have one compact String footer with separate game con
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
 
-  // The editor's light page needs a full-width footer and a stable column across wizard steps.
+  // The editor header and footer span the viewport. The nav follows the wizard column.
+  const editorHeader = await page.getByRole('banner').boundingBox();
   const editorFooter = await page.locator('.str-footer').boundingBox();
+  expect(editorHeader.width).toBe(page.viewportSize().width);
   expect(editorFooter.width).toBe(page.viewportSize().width);
+  const nav = await page.locator('.host-header-inner').boundingBox();
+  const shell = await page.locator('.host-shell').boundingBox();
+  expect(nav.x).toBe(shell.x);
+  expect(nav.width).toBe(shell.width);
   const shellWidths = await page.evaluate(() => {
     const width = () => document.querySelector('.host-shell').getBoundingClientRect().width;
     const steps = [...document.querySelectorAll('#wizard [data-step]')];
