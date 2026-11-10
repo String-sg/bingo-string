@@ -117,7 +117,7 @@ class BingoApp {
             console.log('🎮 Game loaded:', game);
 
             // Update page title
-            document.title = `${game.name} - Bingo`;
+            document.title = `${game.name} · bingo`;
 
             // Update UI to show this is a custom game
             const footer = document.querySelector('.footer');
