@@ -88,6 +88,9 @@ test('narrow shared board wraps long prompts and keeps keyboard focus visible', 
   await page.goto('/play/layout-fixture?preview=1');
   const cells = page.locator('.bingo-cell');
   await expect(cells).toHaveCount(9);
+  await expect(page.locator('#recenterBtn')).toBeHidden();
+  await expect(page.locator('.grid-container')).toHaveCSS('touch-action', 'auto');
+  expect(await page.evaluate(() => window.bingoApp.touchManager)).toBeNull();
   await expectReadable(cells.locator('.cell-number, .cell-text'));
   expect(await cells.evaluateAll(items => items.every(cell => {
     const label = cell.querySelector('.cell-text');

@@ -47,6 +47,8 @@ try {
   await teacher.getByRole("button", { name: "Start", exact: true }).click();
   await expect(phone.locator(".bingo-cell")).toHaveCount(9);
   await expect(manual.locator(".bingo-cell")).toHaveCount(9);
+  await expect(phone.locator("#recenterBtn")).toBeHidden();
+  await expect(phone.locator(".grid-container")).toHaveCSS("touch-action", "auto");
   await expect(scan).toBeVisible();
   await phone.goto(target + "/join#pin=600102");
   await expect(phone.getByLabel("Game PIN")).toHaveValue("600102");
