@@ -330,6 +330,14 @@ test("saved photos remain isolated per game and player session", async ({
   );
 });
 
+test("shows the same bingo header on landing, host, play and join pages", async ({ page }) => {
+  for (const route of ["/", "/new.html", "/play", "/join"]) {
+    await page.goto(route);
+    await expect(page.getByRole("banner").getByRole("link", { name: "bingo", exact: true })).toBeVisible();
+  }
+  await expect(page.getByRole("heading", { name: "Join bingo", exact: true })).toBeVisible();
+});
+
 test("homepage offers guest play without starting a session", async ({ page }) => {
   const apiCalls = [];
   page.on("request", request => {
@@ -349,7 +357,7 @@ test("homepage resumes the host editor after String ID returns to the root", asy
   await page.getByRole("main").getByRole("link", { name: "Host a game" }).click();
   await page.getByRole("button", { name: "Continue with String ID" }).click();
   await page.keyboard.press("Escape");
-  await page.getByRole("link", { name: "String Bingo" }).click();
+  await page.getByRole("banner").getByRole("link", { name: "bingo", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Play bingo with your group.");
 
   await page.getByRole("main").getByRole("link", { name: "Host a game" }).click();

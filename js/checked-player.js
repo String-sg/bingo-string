@@ -40,7 +40,7 @@ export class CheckedPlayer {
       this.path = "/rounds/" + encodeURIComponent(previous.id);
       this.token = previous.token;
       this.app.gameId = "live-" + previous.id;
-      panel().replaceChildren(el("h1", "String Bingo"), this.status);
+      panel().replaceChildren(el("h1", "bingo"), this.status);
     } else {
       this.token = read(this.key);
       if (!this.token) return this.joinForm();
@@ -68,7 +68,7 @@ export class CheckedPlayer {
     join.type = "submit";
     form.append(join, this.status);
     this.status.textContent = message;
-    container.replaceChildren(el("h1", this.live ? "Join String Bingo" : "Join this board"), form);
+    container.replaceChildren(el("h1", this.live ? "Join bingo" : "Join this board"), form);
     form.onsubmit = async (event) => {
       event.preventDefault();
       if (join.disabled) return;
