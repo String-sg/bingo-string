@@ -4,7 +4,7 @@ import { hostCookie, protection, target } from "./fixtures/checked-client.mjs";
 
 const browser = await chromium.launch();
 try {
-  const teacherContext = await browser.newContext();
+  const teacherContext = await browser.newContext(devices["iPhone 12"]);
   const phoneContext = await browser.newContext(devices["iPhone 12"]);
   const manualContext = await browser.newContext(devices["iPhone 12"]);
   if (Object.keys(protection).length) {
@@ -21,6 +21,8 @@ try {
   await expect(pinLabel).toHaveText(/^\d{6}$/);
   const pin = await pinLabel.textContent();
   const scan = teacher.getByRole("link", { name: "Scan to join", exact: true });
+  await expect(scan).toBeInViewport();
+  await expect(teacher.getByRole("banner").getByRole("link", { name: "bingo", exact: true })).toBeVisible();
   await expect(scan).toHaveAttribute("href", target + "/join#pin=" + pin);
   await expect.poll(() => scan.locator("img").evaluate((image) => image.naturalWidth)).toBeGreaterThan(0);
   const phone = await phoneContext.newPage();
@@ -45,11 +47,17 @@ try {
   await teacher.getByRole("button", { name: "Start", exact: true }).click();
   await expect(phone.locator(".bingo-cell")).toHaveCount(9);
   await expect(manual.locator(".bingo-cell")).toHaveCount(9);
+  await expect(scan).toBeVisible();
+  await phone.goto(target + "/join#pin=600102");
+  await expect(phone.getByLabel("Game PIN")).toHaveValue("600102");
+  await expect(phone.getByLabel("Nickname")).toHaveValue("");
+  await phone.goto(target + "/join#pin=" + pin);
+  await expect(phone.locator(".bingo-cell")).toHaveCount(9);
   teacher.once("dialog", (dialog) => dialog.accept());
   await teacher.getByRole("button", { name: "End session", exact: true }).click();
   await expect(scan).toBeHidden();
   await expect(phone.getByRole("heading", { name: "Session ended" })).toBeVisible();
-  console.log("PASS QR image and destination, PIN prefill, nickname requirement, resume, manual join, Start and End");
+  console.log("PASS mobile host QR, PIN prefill, nickname requirement, resume, alternate PIN, manual join, Start and End");
 } finally {
   await browser.close();
 }
