@@ -279,13 +279,13 @@ export class AuthManager {
       const preview = node("a", "Preview", "btn btn-outline");
       preview.href = `/play/${encodeURIComponent(game.id)}?preview=1`;
       actions.append(preview);
-      for (const [label, fn] of [
-        ["Share", () => this.shareGame(game)],
+      for (const [label, fn, style] of [
+        ["Share", () => this.shareGame(game), "primary"],
         ["Results", () => game.checked
           ? showCheckedResults("/boards/" + encodeURIComponent(game.id), game.name)
-          : this.showGameResults(game.id, game.name)],
+          : this.showGameResults(game.id, game.name), "outline"],
       ]) {
-        const b = node("button", label, "btn btn-outline");
+        const b = node("button", label, `btn btn-${style}`);
         b.type = "button";
         b.onclick = fn;
         actions.append(b);
