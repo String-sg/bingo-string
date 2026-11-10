@@ -668,34 +668,51 @@ html {
     gap: 8px;
 }
 
-.game-card-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-}
-
-.game-card-heading h3 {
+.game-card h3 {
     margin: 0;
     overflow-wrap: anywhere;
 }
 
-.game-card-heading .game-card-delete {
+.game-actions .game-card-start {
+    grid-column: 1 / -1;
+}
+
+.game-card-tools {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.game-card-tools .btn {
     display: grid;
     place-items: center;
     flex: 0 0 44px;
     min-height: 44px;
+    margin: 0;
     padding: 0;
     background: transparent;
+    color: var(--primary-color);
+}
+
+.game-card-tools .btn-outline {
+    border-color: var(--primary-color);
+}
+
+.game-card-tools .btn-outline:hover {
+    background: rgba(117, 248, 204, 0.12);
+    color: var(--primary-color);
+}
+
+.game-card-tools .game-card-delete {
     color: var(--text-primary);
 }
 
-.game-card-heading .game-card-delete:is(:hover, :active) {
+.game-card-tools .game-card-delete:is(:hover, :active) {
     background: rgba(244, 67, 54, 0.12);
     color: #ff8178;
 }
 
-.game-card-heading .game-card-delete:focus-visible {
+.game-card-tools .btn:focus-visible {
     outline-color: var(--primary-color);
 }
 

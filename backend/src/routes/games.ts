@@ -2,7 +2,7 @@ import express from 'express';
 import type { Prisma } from '@prisma/client';
 import { hostLimiter, createGameLimiter } from '../middleware/rate-limit';
 import prisma from '../lib/prisma';
-import { firstLine, parseChallenges, publicChallenges } from '../lib/checked-bingo';
+import { activeSince, firstLine, parseChallenges, publicChallenges } from '../lib/checked-bingo';
 import { canEditGame, lockGameForPlay, resultsVersion, validResultsVersion } from '../lib/game-management';
 import { authenticateString, optionalAuth, resolveMember, AuthenticatedRequest, trustedOrigin } from '../middleware/auth';
 
@@ -19,6 +19,13 @@ router.get('/', hostLimiter, authenticateString, async (req: AuthenticatedReques
       },
       orderBy: {
         updatedAt: 'desc'
+      },
+      include: {
+        liveRounds: {
+          where: { OR: [{ closesAt: { gt: activeSince() } }, { endedAt: { gt: activeSince() } }] },
+          orderBy: [{ closesAt: 'desc' }, { id: 'desc' }],
+          select: { id: true, pin: true, closesAt: true, startedAt: true, endedAt: true }
+        }
       }
     });
 
@@ -186,23 +193,20 @@ router.put('/:id', hostLimiter, trustedOrigin, authenticateString, async (req: A
 router.delete('/:id', hostLimiter, trustedOrigin, authenticateString, async (req: AuthenticatedRequest<{ id: string }>, res) => {
   try {
     const { id } = req.params;
-
-    const game = await prisma.game.findUnique({
-      where: { id }
+    const result = await prisma.$transaction(async (db) => {
+      await db.$queryRaw`SELECT id FROM games WHERE id = ${id} FOR UPDATE`;
+      const game = await db.game.findUnique({ where: { id }, select: { creatorId: true } });
+      if (!game) return { status: 404, error: 'Game not found' };
+      if (game.creatorId !== req.user!.id) return { status: 403, error: 'Not authorized to delete this game' };
+      const active = await db.liveRound.findFirst({
+        where: { gameId: id, endedAt: null, closesAt: { gt: new Date() } },
+        select: { id: true }
+      });
+      if (active) return { status: 409, error: 'End the live session before deleting this game.' };
+      await db.game.delete({ where: { id } });
+      return { status: 204 };
     });
-
-    if (!game) {
-      return res.status(404).json({ error: 'Game not found' });
-    }
-
-    if (game.creatorId !== req.user!.id) {
-      return res.status(403).json({ error: 'Not authorized to delete this game' });
-    }
-
-    await prisma.game.delete({
-      where: { id }
-    });
-
+    if (result.error) return res.status(result.status).json({ error: result.error });
     res.status(204).send();
   } catch (error) {
     console.error('Error deleting game:', error);

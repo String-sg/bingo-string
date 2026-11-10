@@ -44,7 +44,7 @@ try {
   await manual.getByLabel("Nickname").fill("PIN pupil");
   await manual.getByRole("button", { name: "Join", exact: true }).click();
   await expect(teacher.getByText("2 joined")).toBeVisible();
-  await teacher.getByRole("button", { name: "Start", exact: true }).click();
+  await teacher.getByRole("button", { name: "Start game", exact: true }).click();
   await expect(phone.locator(".bingo-cell")).toHaveCount(9);
   await expect(manual.locator(".bingo-cell")).toHaveCount(9);
   await expect(phone.locator("#recenterBtn")).toBeHidden();

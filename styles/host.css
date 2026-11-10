@@ -339,6 +339,15 @@ textarea:focus-visible {
   text-align: center;
 }
 
+.live-panel a:not(.btn) {
+  color: var(--primary-color);
+  text-underline-offset: 0.2em;
+}
+
+.live-panel a:focus-visible {
+  outline-color: var(--primary-color);
+}
+
 .live-form {
   text-align: left;
   max-width: 30rem;

@@ -24,6 +24,77 @@ async function createBoard(context, baseURL, size, checked = true, isPublic = tr
 const action = (page, name) => page.getByRole("button", { name, exact: true });
 const card = (page, name) => page.getByRole("article").filter({ has: page.getByRole("heading", { name, exact: true }) });
 
+test("Start opens an owner-only lobby for each game and students join with its PIN", async ({ page, context, browser, baseURL }) => {
+  const game = await createBoard(context, baseURL, 3, true, false);
+  const olderGame = await createBoard(context, baseURL, 3, false);
+  const endpoint = `/api/checked/boards/${game.id}/lobby`;
+  const options = { headers: { origin: baseURL }, data: {} };
+  const guest = await browser.newContext({ baseURL });
+  try {
+    expect((await guest.request.post(endpoint, options)).status()).toBe(401);
+    await guest.addCookies([{ name: "string_session", value: "e".repeat(64), url: baseURL }]);
+    expect((await guest.request.post(endpoint, options)).status()).toBe(403);
+    await guest.clearCookies();
+
+    await page.goto("/play?host=1");
+    const gameCard = card(page, game.name);
+    await gameCard.getByRole("button", { name: "Copy link" }).click();
+    await expect(page.getByText("Open its lobby with Start", { exact: false })).toBeVisible();
+    await action(page, "Close").click();
+    const [, duplicate] = await Promise.all([
+      gameCard.getByRole("button", { name: "Start", exact: true }).click(),
+      context.request.post(endpoint, options),
+    ]);
+    expect(duplicate.status()).toBe(200);
+    const round = await duplicate.json();
+    await expect(page).toHaveURL(`/host/live/${round.id}`);
+    await expect(page.getByRole("heading", { name: game.name })).toBeVisible();
+    const pinLabel = page.getByLabel("Game PIN");
+    await expect(pinLabel).toHaveText(/^\d{6}$/);
+    const pin = await pinLabel.textContent();
+    await page.reload();
+    await expect(pinLabel).toHaveText(pin);
+    const scan = page.getByRole("link", { name: "Scan to join", exact: true });
+    await expect(scan).toHaveAttribute("href", `${baseURL}/join#pin=${pin}`);
+    await expect(scan).toHaveCSS("color", "rgb(117, 248, 204)");
+    const lobby = `/api/checked/rounds/${round.id}/lobby`;
+    expect((await guest.request.get(lobby)).status()).toBe(401);
+    expect((await context.request.delete(`/api/games/${game.id}`, { headers: options.headers })).status()).toBe(409);
+
+    const student = await guest.newPage();
+    await student.goto(await scan.getAttribute("href"));
+    await expect(student.getByLabel("Game PIN")).toHaveValue(pin);
+    await student.getByLabel("Nickname").fill("Class pupil");
+    await action(student, "Join").click();
+    await expect(student.getByText("Waiting for your teacher to start")).toBeVisible();
+    await expect(page.getByText("1 joined")).toBeVisible();
+    await action(page, "Start game").click();
+    await expect(student.locator(".bingo-cell")).toHaveCount(9);
+    page.once("dialog", dialog => dialog.accept());
+    await action(page, "End session").click();
+    await expect(student.getByRole("heading", { name: "Session ended" })).toBeVisible();
+    expect((await guest.request.post("/api/checked/join", {
+      headers: { "x-bingo-player": randomUUID() }, data: { pin, nickname: "Late pupil" },
+    })).status()).toBe(410);
+
+    const back = page.getByRole("link", { name: "← My games" });
+    await back.click();
+    await gameCard.getByRole("button", { name: "Results", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "Game results" }).getByText("Class pupil")).toBeVisible();
+    await action(page, "Close").click();
+    await gameCard.getByRole("button", { name: "Start", exact: true }).click();
+    await expect(pinLabel).toHaveText(/^\d{6}$/);
+    expect(await pinLabel.textContent()).not.toBe(pin);
+    const nextLobby = page.url();
+    await back.click();
+    await card(page, olderGame.name).getByRole("button", { name: "Start", exact: true }).click();
+    await expect(page.getByRole("heading", { name: olderGame.name })).toBeVisible();
+    expect(page.url()).not.toBe(nextLobby);
+  } finally {
+    await guest.close();
+  }
+});
+
 for (const size of [3, 5]) {
   test(`edit an unused ${size} × ${size} board in place`, async ({ page, context, baseURL }) => {
     const game = await createBoard(context, baseURL, size);
