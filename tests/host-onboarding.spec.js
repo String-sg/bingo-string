@@ -209,6 +209,40 @@ test("results render guest HTML literally and unavailable games never show a def
   ).toBeVisible();
   await expect(page.locator(".bingo-cell")).toHaveCount(0);
 });
+test("game card actions match in size and the trash icon requires confirmation", async ({ page, context }) => {
+  await host(context);
+  const game = { id: "card-actions-test", name: "10 Nov", gridSize: 3, updatedAt: "2026-11-10T00:00:00Z" };
+  let deleted = false;
+  await page.route("**/api/games", (route) => route.fulfill({ json: deleted ? [] : [game] }));
+  await page.route(`**/api/games/${game.id}`, (route) => {
+    expect(route.request().method()).toBe("DELETE");
+    deleted = true;
+    return route.fulfill({ status: 204 });
+  });
+  await page.goto("/play?host=1");
+  const card = page.getByRole("article").filter({ hasText: game.name });
+  const remove = card.getByRole("button", { name: `Delete ${game.name}`, exact: true });
+  await expect(remove.locator("svg")).toHaveCSS("stroke", "rgb(255, 255, 255)");
+  const sizes = await card.locator(".game-actions > .btn").evaluateAll((actions) => actions.map((action) => {
+    const { width, height } = action.getBoundingClientRect();
+    return { width, height };
+  }));
+  expect(sizes).toHaveLength(4);
+  for (const { width, height } of sizes) {
+    expect(width).toBeCloseTo(sizes[0].width, 1);
+    expect(height).toBeCloseTo(sizes[0].height, 1);
+    expect(Math.min(width, height)).toBeGreaterThanOrEqual(44);
+  }
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await remove.press("Enter");
+  await expect(card).toBeVisible();
+  expect(deleted).toBe(false);
+  page.once("dialog", (dialog) => dialog.accept());
+  await remove.click();
+  await expect(card).toHaveCount(0);
+  expect(deleted).toBe(true);
+});
+
 test("valid 9-prompt quoted CSV imports and dashboard failures are not empty states", async ({
   page,
   context,
