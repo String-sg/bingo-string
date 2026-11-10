@@ -3,13 +3,15 @@
   display: none !important;
 }
 .host-header {
+  background: #fff;
+  border-bottom: 1px solid #deded7;
+}
+.board-page .host-header,
+.host-header-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem 1.5rem;
-  background: #fff;
-  border-bottom: 1px solid #deded7;
   flex-wrap: wrap;
 }
 .host-header nav {
@@ -56,12 +58,19 @@
 .host-dialog :is(h1, h2, h3) {
   font-family: var(--font-title);
 }
-.host-shell {
-  /* Fill the flex column; auto margins alone would shrink it to each step's content. */
+.host-shell,
+.host-header-inner {
   width: 100%;
   max-width: 900px;
-  margin: 2.5rem auto;
-  padding: 0 1.25rem 3rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+.host-header-inner {
+  padding-block: 1rem;
+}
+.host-shell {
+  margin-block: 2.5rem;
+  padding-bottom: 3rem;
   line-height: 1.6;
 }
 .host-shell h1 {
@@ -209,9 +218,6 @@ textarea:focus-visible {
 @media (max-width: 600px) {
   .prompt-list {
     grid-template-columns: 1fr;
-  }
-  .host-header {
-    padding: 1rem;
   }
   .board-page #hostGameBtn {
     padding-inline: 0.8rem;
