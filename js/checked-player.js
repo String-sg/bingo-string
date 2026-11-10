@@ -161,7 +161,9 @@ export class CheckedPlayer {
         save(liveKey, null);
         location.reload();
       }, "btn btn-outline");
-      panel().replaceChildren(el("h1", "Session ended"), el("p", data.name), this.receipt, another);
+      const actions = el("div", undefined, "button-row");
+      actions.append(this.receipt, another, document.getElementById("downloadBtn"));
+      panel().replaceChildren(el("h1", "Session ended"), el("p", data.name), actions);
       return;
     }
     if (!this.playing) {
