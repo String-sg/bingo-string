@@ -8,10 +8,10 @@ const studentLink = () => {
   return link;
 };
 
-function signIn(container, auth) {
+function signIn(container, auth, intent = "demo") {
   container.append(
-    el("h1", "Host the Bingo demo"),
-    button("Sign in with String ID", () => auth.showAuthModal("demo")),
+    el("h1", intent === "demo" ? "Host the Bingo demo" : "Sign in to host this game"),
+    button("Sign in with String ID", () => auth.showAuthModal(intent)),
     el("p", "Students join at "),
   );
   container.lastChild.append(studentLink());
@@ -39,10 +39,12 @@ export async function openLobby(id, auth) {
   const container = panel();
   await auth.ready;
   if (!auth.isLoggedIn()) {
-    signIn(container, auth);
+    signIn(container, auth, "lobby:" + id);
     return;
   }
   const path = "/rounds/" + encodeURIComponent(id);
+  const back = el("a", "← My games");
+  back.href = "/play?host=1";
   const title = el("h1", "Bingo lobby");
   const join = el("p", "Join at ");
   join.append(studentLink());
@@ -59,12 +61,12 @@ export async function openLobby(id, auth) {
   const count = statusText("Loading players…");
   const status = statusText();
   const actions = el("div", undefined, "live-actions");
-  const start = button("Start", () => control("start"));
-  const end = button("End session", () => control("end"), "btn btn-secondary");
+  const start = button("Start game", () => control("start"));
+  const end = button("End session", () => control("end"), "btn btn-outline");
   const results = button("Private results", () => showCheckedResults(path, title.textContent, refresh), "btn btn-outline");
   actions.append(start, end, results);
   actions.hidden = true;
-  container.append(title, join, pin, scan, count, roster, actions, status);
+  container.append(back, title, join, pin, scan, count, roster, actions, status);
   let controlBusy = false;
   let ended = false;
   let lastRoster = "";
@@ -121,7 +123,7 @@ export async function openLobby(id, auth) {
   await poll();
 }
 
-export async function showCheckedResults(path, name, refreshLobby) {
+export async function showCheckedResults(path, name, refreshLobby, choices = []) {
   const dialog = el("dialog", undefined, "host-dialog checked-results");
   dialog.setAttribute("aria-label", "Game results");
   const status = statusText();
@@ -135,7 +137,19 @@ export async function showCheckedResults(path, name, refreshLobby) {
     await load();
     if (refreshLobby) await refreshLobby();
   }, status);
-  dialog.append(el("h2", "Results · " + name), status, content, refresh, close, clear);
+  dialog.append(el("h2", "Results · " + name));
+  if (choices.length) {
+    const other = el("details");
+    other.append(el("summary", "Other scorecards"));
+    for (const { label, open } of choices) {
+      other.append(button(label, () => {
+        dialog.close();
+        open();
+      }, "btn btn-outline"));
+    }
+    dialog.append(other);
+  }
+  dialog.append(status, content, refresh, close, clear);
   document.body.append(dialog);
   dialog.addEventListener("close", () => dialog.remove());
   dialog.showModal();

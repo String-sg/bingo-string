@@ -39,7 +39,7 @@ try {
   await second.reload();
   await expect(second.getByText("Waiting for your teacher to start")).toBeVisible();
   await expect(teacher.getByText("2 joined")).toBeVisible();
-  await teacher.getByRole("button", { name: "Start", exact: true }).click();
+  await teacher.getByRole("button", { name: "Start game", exact: true }).click();
   await Promise.all([first, second].map((page) => expect(page.locator(".bingo-cell")).toHaveCount(9)));
   await a.setOffline(true);
   await first.locator(".bingo-cell").nth(0).click();

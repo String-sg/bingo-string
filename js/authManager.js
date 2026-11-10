@@ -1,15 +1,28 @@
 import { getConfig } from "./config.js";
 import { showCheckedResults } from "./live-host.js";
-import { clearResultsButton, statusText } from "./checked-ui.js";
+import { button, checkedRequest, clearResultsButton, singaporeTime, statusText } from "./checked-ui.js";
 import { copyLink } from "./copy-link.js";
 const SIGN_IN = "https://id.string.sg/login?continue=bingo";
 const isDefaultBoard = () => ["/play", "/play/", "/play.html"].includes(location.pathname);
+const activeRound = (game) => game.liveRounds?.find(({ endedAt, closesAt }) => !endedAt && Date.parse(closesAt) > Date.now());
 const node = (tag, text, className) => {
   const el = document.createElement(tag);
   if (text !== undefined) el.textContent = text;
   if (className) el.className = className;
   return el;
 };
+function cardIcon(tag, label, path, style = "btn-outline") {
+  const control = node(tag, undefined, "btn " + style);
+  if (tag === "button") control.type = "button";
+  control.setAttribute("aria-label", label);
+  control.title = label;
+  control.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <path d="${path}" />
+    </svg>`;
+  return control;
+}
 export class AuthManager {
   constructor() {
     this.user = null;
@@ -157,7 +170,7 @@ export class AuthManager {
       retry.disabled = false;
       if (this.user) {
         dialog.close();
-        if (intent === "demo" || location.pathname.includes("new.html")) location.reload();
+        if (intent === "demo" || intent.startsWith("lobby:") || location.pathname.includes("new.html")) location.reload();
         else location.assign("/new.html");
       } else {
         dialog.close();
@@ -270,65 +283,76 @@ export class AuthManager {
     for (const game of games) {
       const card = node("article", undefined, "game-card");
       const id = encodeURIComponent(game.id);
-      const heading = node("div", undefined, "game-card-heading");
-      const remove = node("button", undefined, "btn game-card-delete");
-      remove.type = "button";
-      remove.setAttribute("aria-label", `Delete ${game.name}`);
-      remove.title = "Delete game";
-      remove.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-          <path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m5 4v6m4-6v6" />
-        </svg>`;
-      remove.onclick = () => this.deleteGame(game.id);
-      heading.append(node("h3", game.name), remove);
       const meta = node("p", `${game.gridSize} × ${game.gridSize} · ${new Date(game.updatedAt).toLocaleDateString()}`, "game-meta");
       const actions = node("div", undefined, "game-actions");
-      const share = node("button", "Share", "btn btn-primary");
-      share.type = "button";
-      share.onclick = () => this.shareGame(game);
-      const edit = node("a", "Edit", "btn btn-outline");
-      edit.href = `/new.html?edit=${id}`;
-      const results = node("button", "Results", "btn btn-outline");
-      results.type = "button";
-      results.onclick = () => game.checked
-        ? showCheckedResults("/boards/" + id, game.name)
-        : this.showGameResults(game.id, game.name);
+      const start = button("Start", async () => {
+        start.disabled = true;
+        try {
+          const round = await checkedRequest("/boards/" + id + "/lobby", { data: {} });
+          location.assign("/host/live/" + encodeURIComponent(round.id));
+        } catch (error) {
+          this.showError(error.message);
+          start.disabled = false;
+        }
+      }, "btn btn-primary game-card-start");
       const preview = node("a", "Preview", "btn btn-outline game-card-preview");
       preview.href = `/play/${id}?preview=1`;
-      actions.append(share, edit, results, preview);
-      card.append(heading, meta, actions);
+      actions.append(start, preview, button("Results", () => this.showCardResults(game), "btn btn-outline"));
+      const tools = node("div", undefined, "game-card-tools");
+      const copy = cardIcon("button", "Copy link", "M10 13a4 4 0 0 0 6 0l4-4a4 4 0 0 0-6-6l-2 2m2 6a4 4 0 0 0-6 0l-4 4a4 4 0 0 0 6 6l2-2");
+      copy.onclick = () => this.shareGame(game);
+      const edit = cardIcon("a", "Edit", "M14 5l5 5M4 20l5-1L20 8l-5-5L4 14z");
+      edit.href = `/new.html?edit=${id}`;
+      const remove = cardIcon("button", `Delete ${game.name}`, "M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m5 4v6m4-6v6", "game-card-delete");
+      remove.onclick = () => activeRound(game)
+        ? this.showError("End the live session before deleting this game.")
+        : this.deleteGame(game.id);
+      tools.append(copy, edit, remove);
+      card.append(node("h3", game.name), meta, actions, tools);
       list.append(card);
     }
   }
   shareGame(game) {
     const d = node("dialog", undefined, "host-dialog");
     d.setAttribute("aria-label", "Share game");
-    const isPrivate = game.isPublic === false;
+    const round = activeRound(game);
+    const path = round ? "/join#pin=" + round.pin : game.isPublic !== false ? "/play/" + encodeURIComponent(game.id) : null;
     d.append(
       node("h2", `Share ${game.name}`),
-      node("p", isPrivate
-        ? "This board is private. For a live game, share this join link and give players the PIN shown in your host lobby."
-        : "Anyone with this link can play without signing in."),
+      node("p", round
+        ? "This link opens the student join page with the game PIN filled in."
+        : path ? "Anyone with this link can play without signing in."
+          : "This board is private. Open its lobby with Start to get a student link."),
     );
+    const close = button("Close", () => d.close(), "btn btn-outline");
+    d.addEventListener("close", () => d.remove());
+    if (!path) {
+      d.append(close);
+      document.body.append(d);
+      d.showModal();
+      return;
+    }
     const input = node("input");
-    const path = isPrivate ? "/join" : `/play/${encodeURIComponent(game.id)}`;
     input.value = location.origin + path;
     input.readOnly = true;
     input.setAttribute("aria-label", "Game link");
-    d.append(input);
-    const status = node("p");
-    status.setAttribute("role", "status");
-    const copy = node("button", "Copy link", "btn btn-primary");
-    copy.onclick = () => copyLink(input, status);
-    const close = node("button", "Close", "btn btn-secondary");
-    close.onclick = () => {
-      d.close();
-      d.remove();
-    };
-    d.append(copy, close, status);
+    const status = statusText();
+    d.append(input, button("Copy link", () => copyLink(input, status)), close, status);
     document.body.append(d);
     d.showModal();
+    void copyLink(input, status);
+  }
+  showCardResults(game, selected = game.liveRounds?.[0]) {
+    const shared = () => game.checked
+      ? showCheckedResults("/boards/" + encodeURIComponent(game.id), game.name)
+      : this.showGameResults(game.id, game.name);
+    if (!selected) return shared();
+    const choices = game.liveRounds.filter(({ id }) => id !== selected.id).map(round => ({
+      label: "Live session · " + singaporeTime(round.startedAt || round.endedAt || round.closesAt),
+      open: () => this.showCardResults(game, round),
+    }));
+    choices.push({ label: "Shared board results", open: shared });
+    return showCheckedResults("/rounds/" + encodeURIComponent(selected.id), game.name, undefined, choices);
   }
   async showGameResults(id, name) {
     const path = `${this.config.API_BASE_URL}/games/${encodeURIComponent(id)}/results`;
@@ -398,7 +422,7 @@ export class AuthManager {
       { method: "DELETE" },
     );
     if (r.ok) this.fetchUserGames();
-    else this.showError("Could not delete the game. Retry or sign in again.");
+    else this.showError((await r.json().catch(() => ({}))).error || "Could not delete the game. Retry or sign in again.");
   }
   showError(message) {
     const status = document.getElementById("status");

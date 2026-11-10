@@ -226,17 +226,24 @@ test("game card actions match in size and the trash icon requires confirmation",
   const remove = card.getByRole("button", { name: `Delete ${game.name}`, exact: true });
   await expect(remove.locator("svg")).toHaveCSS("stroke", "rgb(255, 255, 255)");
   await expect(card.getByRole("link", { name: "Preview", exact: true })).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  expect(await card.locator(".game-actions > .btn").allTextContents()).toEqual(["Share", "Edit", "Results", "Preview"]);
+  expect(await card.locator(".game-actions > .btn").allTextContents()).toEqual(["Start", "Preview", "Results"]);
   const sizes = await card.locator(".game-actions > .btn").evaluateAll((actions) => actions.map((action) => {
     const { width, height } = action.getBoundingClientRect();
     return { width, height };
   }));
-  expect(sizes).toHaveLength(4);
-  for (const { width, height } of sizes) {
-    expect(width).toBeCloseTo(sizes[0].width, 1);
-    expect(height).toBeCloseTo(sizes[0].height, 1);
-    expect(Math.min(width, height)).toBeGreaterThanOrEqual(44);
-  }
+  expect(sizes).toHaveLength(3);
+  const [start, preview, results] = sizes;
+  expect(start.width).toBeCloseTo(preview.width + results.width + 8, 1);
+  expect(preview.width).toBeCloseTo(results.width, 1);
+  expect(sizes.every(({ height }) => height >= 44)).toBe(true);
+  const tools = await card.locator(".game-card-tools > .btn").evaluateAll((controls) =>
+    controls.map((control) => {
+      const { y, width, height } = control.getBoundingClientRect();
+      return { y, width, height };
+    }),
+  );
+  expect(tools).toHaveLength(3);
+  expect(tools.every(({ y, width, height }) => y === tools[0].y && width >= 44 && height >= 44)).toBe(true);
   page.once("dialog", (dialog) => dialog.dismiss());
   await remove.press("Enter");
   await expect(card).toBeVisible();
@@ -424,18 +431,20 @@ test("copies the live join link for a private board and handles blocked clipboar
     };
   });
   await page.route("**/api/games", (route) => route.fulfill({
-    json: [{ id: "private-board", name: "Private board", gridSize: 3, isPublic: false, updatedAt: "2026-11-10T00:00:00Z" }],
+    json: [{
+      id: "private-board", name: "Private board", gridSize: 3, isPublic: false, updatedAt: "2026-11-10T00:00:00Z",
+      liveRounds: [{ pin: "600104", endedAt: null, closesAt: new Date(Date.now() + 60000).toISOString() }],
+    }],
   }));
   await page.goto("/play?host=1");
-  await page.getByRole("button", { name: "Share", exact: true }).click();
+  await page.getByRole("button", { name: "Copy link", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Share game" });
   const input = dialog.getByRole("textbox", { name: "Game link" });
   const copy = dialog.getByRole("button", { name: "Copy link" });
   const status = dialog.getByRole("status");
-  const joinLink = baseURL + "/join";
+  const joinLink = baseURL + "/join#pin=600104";
   await expect(input).toHaveValue(joinLink);
-  await expect(dialog.getByText(/give players the PIN/)).toBeVisible();
-  await copy.click();
+  await expect(dialog.getByText(/game PIN filled in/)).toBeVisible();
   await expect(status).toHaveText("Link copied.");
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(joinLink);
 

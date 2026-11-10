@@ -141,6 +141,45 @@ router.post("/demo", hostLimiter, trustedOrigin, authenticateString, route(async
   return reject(503, "Could not assign a PIN. Please retry.");
 }));
 
+router.post("/boards/:id/lobby", hostLimiter, trustedOrigin, authenticateString, route(async (req: AuthenticatedRequest<{ id: string }>, res) => {
+  const { id } = req.params;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    try {
+      const round = await prisma.$transaction(async (db) => {
+        await db.$queryRaw`SELECT id FROM games WHERE id = ${id} FOR UPDATE`;
+        const game = await db.game.findUnique({ where: { id }, select: { creatorId: true, checked: true } });
+        if (!game) return reject(404, "Board unavailable.");
+        if (game.creatorId !== req.user?.id) return reject(403, "Only the board owner can open its lobby.");
+
+        const now = new Date();
+        const current = await db.liveRound.findFirst({
+          where: { gameId: id, endedAt: null, closesAt: { gt: now } },
+          orderBy: [{ closesAt: "desc" }, { id: "desc" }],
+          select: { id: true },
+        });
+        if (current) return current;
+
+        const demo = demoConfig();
+        const firstDemo = game.checked && demo?.gameId === id &&
+          !(await db.liveRound.findUnique({ where: { demoKey: demo.demoKey }, select: { id: true } }));
+        return db.liveRound.create({
+          data: {
+            gameId: id,
+            pin: String(randomInt(100000, 1000000)),
+            closesAt: firstDemo ? demo.closesAt : new Date(now.getTime() + 24 * 60 * 60 * 1000),
+            ...(firstDemo ? { demoKey: demo.demoKey } : {}),
+          },
+          select: { id: true },
+        });
+      });
+      return res.json(round);
+    } catch (error) {
+      if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") throw error;
+    }
+  }
+  return reject(503, "Could not assign a PIN. Please retry.");
+}));
+
 router.post("/join", pinLimiter, route(async (req, res) => {
   const pin = req.body.pin;
   if (typeof pin !== "string" || !/^\d{6}$/.test(pin)) return reject(400, "Enter the six-digit PIN.");
