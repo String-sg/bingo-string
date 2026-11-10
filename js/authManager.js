@@ -276,21 +276,31 @@ export class AuthManager {
         ),
       );
       const actions = node("div", undefined, "game-actions");
-      const preview = node("a", "Preview", "btn btn-sm btn-outline");
+      const preview = node("a", "Preview", "btn btn-outline");
       preview.href = `/play/${encodeURIComponent(game.id)}?preview=1`;
       actions.append(preview);
       for (const [label, fn, style] of [
-        ["Share", () => this.shareGame(game), "outline"],
+        ["Share", () => this.shareGame(game), "primary"],
         ["Results", () => game.checked
           ? showCheckedResults("/boards/" + encodeURIComponent(game.id), game.name)
           : this.showGameResults(game.id, game.name), "outline"],
-        ["Delete", () => this.deleteGame(game.id), "danger"],
       ]) {
-        const b = node("button", label, `btn btn-sm btn-${style}`);
+        const b = node("button", label, `btn btn-${style}`);
         b.type = "button";
         b.onclick = fn;
         actions.append(b);
       }
+      const remove = node("button", undefined, "btn btn-danger");
+      remove.type = "button";
+      remove.setAttribute("aria-label", `Delete ${game.name}`);
+      remove.title = "Delete game";
+      remove.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m5 4v6m4-6v6" />
+        </svg>`;
+      remove.onclick = () => this.deleteGame(game.id);
+      actions.append(remove);
       card.append(actions);
       list.append(card);
     }
