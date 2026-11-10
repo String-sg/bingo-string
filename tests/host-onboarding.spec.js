@@ -86,6 +86,10 @@ for (const size of [3, 5])
     const link = await page
       .getByLabel("Game link", { exact: true })
       .inputValue();
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.getByRole("button", { name: "Copy link", exact: true }).click();
+    await expect(page.locator("#shareStatus")).toHaveText("Link copied.");
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(link);
     const guest = await browser.newContext({
       viewport: { width: 390, height: 844 },
     });
@@ -371,4 +375,35 @@ test("homepage resumes the host editor after String ID returns to the root", asy
   await expect(page).toHaveURL("/new.html");
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Play bingo with your group.");
+});
+
+test("copies the live join link for a private board and handles blocked clipboard access", async ({ page, context, baseURL }) => {
+  await host(context);
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.addInitScript(() => {
+    navigator.clipboard.writeText = async () => {
+      throw new DOMException("Clipboard denied", "NotAllowedError");
+    };
+  });
+  await page.route("**/api/games", (route) => route.fulfill({
+    json: [{ id: "private-board", name: "Private board", gridSize: 3, isPublic: false, updatedAt: "2026-11-10T00:00:00Z" }],
+  }));
+  await page.goto("/play?host=1");
+  await page.getByRole("button", { name: "Share", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Share game" });
+  const input = dialog.getByRole("textbox", { name: "Game link" });
+  const copy = dialog.getByRole("button", { name: "Copy link" });
+  const status = dialog.getByRole("status");
+  const joinLink = baseURL + "/join";
+  await expect(input).toHaveValue(joinLink);
+  await expect(dialog.getByText(/give players the PIN/)).toBeVisible();
+  await copy.click();
+  await expect(status).toHaveText("Link copied.");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(joinLink);
+
+  await page.evaluate(() => { document.execCommand = () => false; });
+  await copy.click();
+  await expect(status).toHaveText("Link selected. Use your device’s Copy command.");
+  await expect(input).toBeFocused();
+  expect(await input.evaluate((el) => el.value.slice(el.selectionStart, el.selectionEnd))).toBe(joinLink);
 });

@@ -1,5 +1,6 @@
 import { getConfig } from "./config.js";
 import { showCheckedResults } from "./live-host.js";
+import { copyLink } from "./copy-link.js";
 const SIGN_IN = "https://id.string.sg/login?continue=bingo";
 const isDefaultBoard = () => ["/play", "/play/", "/play.html"].includes(location.pathname);
 const node = (tag, text, className) => {
@@ -298,31 +299,29 @@ export class AuthManager {
   shareGame(game) {
     const d = node("dialog", undefined, "host-dialog");
     d.setAttribute("aria-label", "Share game");
+    const isPrivate = game.isPublic === false;
     d.append(
       node("h2", `Share ${game.name}`),
-      node("p", "Anyone with this link can play without signing in."),
+      node("p", isPrivate
+        ? "This board is private. For a live game, share this join link and give players the PIN shown in your host lobby."
+        : "Anyone with this link can play without signing in."),
     );
     const input = node("input");
-    input.value = `${location.origin}/play/${encodeURIComponent(game.id)}`;
+    const path = isPrivate ? "/join" : `/play/${encodeURIComponent(game.id)}`;
+    input.value = location.origin + path;
     input.readOnly = true;
     input.setAttribute("aria-label", "Game link");
     d.append(input);
+    const status = node("p");
+    status.setAttribute("role", "status");
     const copy = node("button", "Copy link", "btn btn-primary");
-    copy.onclick = async () => {
-      try {
-        await navigator.clipboard.writeText(input.value);
-        copy.textContent = "Copied";
-      } catch {
-        input.select();
-        copy.textContent = "Select and copy the link";
-      }
-    };
+    copy.onclick = () => copyLink(input, status);
     const close = node("button", "Close", "btn btn-secondary");
     close.onclick = () => {
       d.close();
       d.remove();
     };
-    d.append(copy, close);
+    d.append(copy, close, status);
     document.body.append(d);
     d.showModal();
   }
