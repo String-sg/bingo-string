@@ -240,7 +240,9 @@ class BingoApp {
 
     setupTouchManager() {
         const gridContainer = document.querySelector('.grid-container');
-        if (gridContainer) {
+        const compactBoard = this.bingoGrid.gridSize === 3;
+        document.getElementById('recenterBtn').hidden = compactBoard;
+        if (gridContainer && !compactBoard) {
             this.touchManager = new TouchManager(gridContainer);
         }
     }

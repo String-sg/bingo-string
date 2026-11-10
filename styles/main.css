@@ -158,6 +158,10 @@ html {
     box-sizing: border-box;
 }
 
+.grid-container:has(.grid-3x3) {
+    touch-action: auto;
+}
+
 .bingo-cell {
     background: #f5f7f6;
     border: 2px solid transparent;
