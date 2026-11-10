@@ -1,5 +1,6 @@
 import { getConfig } from "./config.js";
 import { AuthManager } from "./authManager.js";
+import { copyLink } from "./copy-link.js";
 import { DRAFT_KEY, parseChallengeCsv, STARTERS } from "./host-draft.js";
 const $ = (id) => document.getElementById(id);
 class GameCreationApp {
@@ -112,16 +113,7 @@ class GameCreationApp {
       if (this.validate()) this.showStep(this.step + 1);
     };
     $("createGameBtn").onclick = () => this.handleGameSubmit();
-    $("copyLinkBtn").onclick = async () => {
-      try {
-        await navigator.clipboard.writeText($("shareLink").value);
-        $("shareStatus").textContent = "Link copied. Send it to your players.";
-      } catch {
-        $("shareLink").focus();
-        $("shareLink").select();
-        $("shareStatus").textContent = "Select and copy the link above.";
-      }
-    };
+    $("copyLinkBtn").onclick = () => copyLink($("shareLink"), $("shareStatus"));
   }
   count() {
     return this.draft.size === 3 ? 9 : 24;
