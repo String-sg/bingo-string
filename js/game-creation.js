@@ -8,6 +8,8 @@ class GameCreationApp {
     this.authManager = new AuthManager();
     this.step = 0;
     this.busy = false;
+    this.editId = new URLSearchParams(location.search).get("edit");
+    this.draftKey = this.editId ? `${DRAFT_KEY}:${this.editId}` : DRAFT_KEY;
     this.draft = {
       name: "",
       size: 3,
@@ -19,9 +21,26 @@ class GameCreationApp {
     this.init();
   }
   async init() {
+    if (this.editId) {
+      document.title = "Edit game · bingo";
+      $("editorTitle").textContent = "Edit game";
+      $("editorIntro").textContent = "Update your board and review the changes before saving.";
+    }
+    this.bind();
+    await this.authManager.ready;
+    this.config = await getConfig();
+    if (this.editId && this.authManager.isLoggedIn()) {
+      try {
+        await this.loadGame();
+      } catch (cause) {
+        $("authGate").textContent = cause.message;
+        return;
+      }
+    }
     try {
-      const saved = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "null");
-      if (saved && [3, 5].includes(saved.size) && Array.isArray(saved.prompts))
+      const saved = JSON.parse(sessionStorage.getItem(this.draftKey) || "null");
+      if (saved && (!this.editId || (this.board && saved.version === this.board.updatedAt)) &&
+          [3, 5].includes(saved.size) && Array.isArray(saved.prompts))
         this.draft = {
           ...this.draft,
           ...saved,
@@ -39,10 +58,40 @@ class GameCreationApp {
       `input[name=gridSize][value="${this.draft.size}"]`,
     ).checked = true;
     this.renderPrompts();
-    this.bind();
-    await this.authManager.ready;
-    this.config = await getConfig();
     this.updateAuth();
+  }
+  async loadGame() {
+    this.editorPath = `${this.config.API_BASE_URL}/games/${encodeURIComponent(this.editId)}/editor`;
+    const response = await fetch(this.editorPath, { cache: "no-store" });
+    const board = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(board.error || "Could not open the editor. Please retry.");
+    this.board = board;
+    if (!board.isPublic)
+      $("reviewAudience").textContent = "This board is private. Students join live sessions with a PIN.";
+    this.draft.name = board.name;
+    this.draft.size = board.gridSize;
+    this.draft.version = board.updatedAt;
+    const tiles = board.challengesJson.filter((_, i) => board.gridSize !== 5 || i !== 12);
+    tiles.forEach((tile, i) => {
+      this.draft.prompts[i] = tile.text;
+      this.draft.modes[i] = tile.mode || "photo";
+      this.draft.aliases[i] = tile.aliases?.join("\n") || "";
+    });
+    this.updateEditNotice();
+  }
+  updateEditNotice() {
+    const notice = $("editNotice");
+    notice.hidden = false;
+    notice.textContent = this.board.canEdit
+      ? "Saving changes keeps this board’s link."
+      : "Save a copy to keep the original board and its results.";
+    $("createGameBtn").textContent = this.submitLabel();
+  }
+  submitLabel() {
+    return this.board ? (this.board.canEdit ? "Save changes" : "Save as copy") : "Create game";
+  }
+  signIn() {
+    this.authManager.showAuthModal(this.editId ? `edit:${this.editId}` : "create");
   }
   updateAuth() {
     const ready = this.authManager.isLoggedIn();
@@ -56,7 +105,7 @@ class GameCreationApp {
     if (ready) this.showStep(0);
   }
   bind() {
-    $("editorSignIn").onclick = () => this.authManager.showAuthModal();
+    $("editorSignIn").onclick = () => this.signIn();
     $("gameName").oninput = () => {
       this.draft.name = $("gameName").value;
       this.save();
@@ -120,7 +169,7 @@ class GameCreationApp {
   }
   save() {
     try {
-      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(this.draft));
+      sessionStorage.setItem(this.draftKey, JSON.stringify(this.draft));
       $("draftNote").textContent = "Draft saved in this browser tab.";
     } catch {
       $("draftNote").textContent =
@@ -263,18 +312,21 @@ class GameCreationApp {
     this.busy = true;
     const button = $("createGameBtn");
     button.disabled = true;
-    button.textContent = "Creating…";
+    button.textContent = this.board ? "Saving…" : "Creating…";
+    const inPlace = this.board?.canEdit;
     try {
-      const response = await fetch(`${this.config.API_BASE_URL}/games`, {
-        method: "POST",
+      const response = await fetch(inPlace ? this.editorPath : `${this.config.API_BASE_URL}/games`, {
+        method: inPlace ? "PUT" : "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           name: this.draft.name.trim(),
           gridSize: this.draft.size,
           challenges: this.challenges(),
-          checked: true,
-          isPublic: true,
-          createKey: this.draft.createKey,
+          ...(inPlace ? { version: this.board.updatedAt } : {
+            checked: true,
+            isPublic: this.board?.isPublic ?? true,
+            createKey: this.draft.createKey,
+          }),
         }),
       });
       if (response.status === 401) {
@@ -282,13 +334,17 @@ class GameCreationApp {
         this.authManager.user = null;
         this.authManager.updateUI();
         this.authManager.status = "signedOut";
-        this.authManager.showAuthModal();
+        this.signIn();
         throw new Error(
           "Your session expired. Sign in again; your draft is saved.",
         );
       }
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
+        if (inPlace && body.code === "board_in_use") {
+          this.board.canEdit = false;
+          this.updateEditNotice();
+        }
         throw new Error(
           body.error ||
             "Could not create the game. Your draft is saved; please retry.",
@@ -297,20 +353,24 @@ class GameCreationApp {
       const game = await response.json();
       $("wizard").hidden = true;
       $("shareReady").hidden = false;
-      $("shareLink").value =
-        `${location.origin}/play/${encodeURIComponent(game.id)}`;
+      if (inPlace) $("readyTitle").textContent = "Changes saved";
+      else if (this.board) $("readyTitle").textContent = "Board copy saved";
+      if (game.isPublic === false)
+        $("readyIntro").textContent = "This board is private. For live play, give students the PIN from your host lobby.";
+      const sharePath = game.isPublic === false ? "/join" : `/play/${encodeURIComponent(game.id)}`;
+      $("shareLink").value = location.origin + sharePath;
       $("previewGameLink").href =
         `/play/${encodeURIComponent(game.id)}?preview=1`;
       $("readyTitle").focus();
       try {
-        sessionStorage.removeItem(DRAFT_KEY);
+        sessionStorage.removeItem(this.draftKey);
       } catch {}
     } catch (cause) {
       this.error(cause.message);
     } finally {
       this.busy = false;
       button.disabled = false;
-      button.textContent = "Create game";
+      button.textContent = this.submitLabel();
     }
   }
 }

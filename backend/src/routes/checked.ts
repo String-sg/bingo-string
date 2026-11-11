@@ -2,6 +2,7 @@ import { randomInt, timingSafeEqual } from "node:crypto";
 import express, { type Request, type Response } from "express";
 import { Prisma, type CheckedEntry } from "@prisma/client";
 import prisma from "../lib/prisma";
+import { lockGameForPlay, resultsVersion, validResultsVersion } from "../lib/game-management";
 import {
   activeSince, challengesOf, hashToken, normalizeAnswer, playerView, publicChallenges,
   roundStatus, tilesOf, updatedEntry, validToken,
@@ -44,14 +45,17 @@ function demoConfig() {
   return { gameId, closesAt, demoKey: gameId + ":" + opensAt.toISOString() };
 }
 
-async function scopeFor(db: Tx, kind: string, id: string, lock = false) {
+async function scopeFor(db: Tx, kind: string, id: string, lock?: "share" | "update") {
   if (kind === "rounds") {
-    if (lock) await db.$queryRaw`SELECT id FROM live_rounds WHERE id = ${id} FOR SHARE`;
+    if (lock === "share") await db.$queryRaw`SELECT id FROM live_rounds WHERE id = ${id} FOR SHARE`;
+    if (lock === "update") await db.$queryRaw`SELECT id FROM live_rounds WHERE id = ${id} FOR UPDATE`;
     const round = await db.liveRound.findUnique({ where: { id }, include: { game: true } });
     if (!round) return reject(404, "Session unavailable.");
     return { game: round.game, round, scope: "round:" + id, status: roundStatus(round) };
   }
   if (kind !== "boards") return reject(404, "Board unavailable.");
+  if (lock === "share") await lockGameForPlay(db, id);
+  if (lock === "update") await db.$queryRaw`SELECT id FROM games WHERE id = ${id} FOR UPDATE`;
   const game = await db.game.findUnique({ where: { id } });
   if (!game?.checked) return reject(404, "Board unavailable.");
   return { game, round: null, scope: "board:" + id, status: "playing" };
@@ -87,13 +91,15 @@ function roundView(scope: Awaited<ReturnType<typeof scopeFor>>, entry: CheckedEn
 
 async function join(req: Request, kind: string, id: string) {
   const token = tokenHash(req);
-  const nickname = req.body.nickname;
+  const { nickname, boardVersion } = req.body;
   if (typeof nickname !== "string" || !nickname.trim() || nickname.length > 40 || nickname.includes("\0"))
     return reject(400, "Enter a nickname of up to 40 characters.");
   return prisma.$transaction(async (db) => {
-    const scope = await scopeFor(db, kind, id, true);
+    const scope = await scopeFor(db, kind, id, "share");
     playerAccess(scope);
     if (scope.status === "ended") return reject(410, "This session has ended. Check the PIN with your teacher.");
+    if (!scope.round && boardVersion !== undefined && boardVersion !== scope.game.updatedAt.toISOString())
+      return reject(409, "The board changed. Reload to join.");
     await db.checkedEntry.deleteMany({ where: { scope: scope.scope, tokenHash: token, activeAt: { lte: activeSince() } } });
     await db.checkedEntry.createMany({
       data: { scope: scope.scope, gameId: scope.game.id, tokenHash: token, nickname: nickname.trim() },
@@ -113,18 +119,60 @@ router.get("/demo", route(async (_req, res) => {
 router.post("/demo", hostLimiter, trustedOrigin, authenticateString, route(async (req: AuthenticatedRequest, res) => {
   const config = demoConfig();
   if (!config) return reject(404, "Demo session unavailable.");
-  const game = await prisma.game.findUnique({ where: { id: config.gameId }, select: { creatorId: true, checked: true } });
-  if (game?.creatorId !== req.user?.id) return reject(403, "Only the demo owner can open the lobby.");
-  if (!game?.checked) return reject(409, "Choose a board created with tile modes.");
   for (let attempt = 0; attempt < 8; attempt++) {
     try {
-      const round = await prisma.liveRound.upsert({
-        where: { demoKey: config.demoKey },
-        create: { ...config, pin: String(randomInt(100000, 1000000)) },
-        update: {},
+      const round = await prisma.$transaction(async (db) => {
+        await lockGameForPlay(db, config.gameId);
+        const game = await db.game.findUnique({ where: { id: config.gameId }, select: { creatorId: true, checked: true } });
+        if (game?.creatorId !== req.user?.id) return reject(403, "Only the demo owner can open the lobby.");
+        if (!game?.checked) return reject(409, "Choose a board created with tile modes.");
+        return db.liveRound.upsert({
+          where: { demoKey: config.demoKey },
+          create: { ...config, pin: String(randomInt(100000, 1000000)) },
+          update: {},
+        });
       });
       if (roundStatus(round) === "ended") return reject(410, "The demo session has ended.");
       return res.json({ id: round.id });
+    } catch (error) {
+      if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") throw error;
+    }
+  }
+  return reject(503, "Could not assign a PIN. Please retry.");
+}));
+
+router.post("/boards/:id/lobby", hostLimiter, trustedOrigin, authenticateString, route(async (req: AuthenticatedRequest<{ id: string }>, res) => {
+  const { id } = req.params;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    try {
+      const round = await prisma.$transaction(async (db) => {
+        await db.$queryRaw`SELECT id FROM games WHERE id = ${id} FOR UPDATE`;
+        const game = await db.game.findUnique({ where: { id }, select: { creatorId: true, checked: true } });
+        if (!game) return reject(404, "Board unavailable.");
+        if (game.creatorId !== req.user?.id) return reject(403, "Only the board owner can open its lobby.");
+
+        const now = new Date();
+        const current = await db.liveRound.findFirst({
+          where: { gameId: id, endedAt: null, closesAt: { gt: now } },
+          orderBy: [{ closesAt: "desc" }, { id: "desc" }],
+          select: { id: true },
+        });
+        if (current) return current;
+
+        const demo = demoConfig();
+        const firstDemo = game.checked && demo?.gameId === id &&
+          !(await db.liveRound.findUnique({ where: { demoKey: demo.demoKey }, select: { id: true } }));
+        return db.liveRound.create({
+          data: {
+            gameId: id,
+            pin: String(randomInt(100000, 1000000)),
+            closesAt: firstDemo ? demo.closesAt : new Date(now.getTime() + 24 * 60 * 60 * 1000),
+            ...(firstDemo ? { demoKey: demo.demoKey } : {}),
+          },
+          select: { id: true },
+        });
+      });
+      return res.json(round);
     } catch (error) {
       if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") throw error;
     }
@@ -156,7 +204,7 @@ router.post("/:kind/:id/action", submissionLimiter, route(async (req: Request<{ 
     return reject(400, "Invalid action.");
   const token = tokenHash(req);
   const result = await prisma.$transaction(async (db) => {
-    const scope = await scopeFor(db, req.params.kind, req.params.id, true);
+    const scope = await scopeFor(db, req.params.kind, req.params.id, "share");
     playerAccess(scope);
     const entry = await findEntry(db, scope.scope, token, true);
     const previous = await db.checkedAction.findUnique({ where: { entryId_requestId: { entryId: entry.id, requestId } } });
@@ -252,6 +300,7 @@ router.get("/:kind/:id/results", hostLimiter, authenticateString, route(async (r
   const challenges = challengesOf(scope.game.challengesJson);
   return res.json({
     status: scope.status,
+    clearVersion: resultsVersion(entries),
     players: entries.map((entry) => ({
       id: entry.id, nickname: entry.nickname, completedAt: entry.completedAt, line: entry.win,
       pending: scope.status === "playing" ? Object.entries(tilesOf(entry)).flatMap(([i, tile]) => tile.state === "pending" ? [{
@@ -261,12 +310,30 @@ router.get("/:kind/:id/results", hostLimiter, authenticateString, route(async (r
   });
 }));
 
+router.post("/:kind/:id/results/clear", hostLimiter, trustedOrigin, authenticateString, route(async (req: AuthenticatedRequest<{ kind: string; id: string }>, res) => {
+  const { version } = req.body;
+  if (!validResultsVersion(version)) return reject(400, "Open Results before clearing.");
+  await prisma.$transaction(async (db) => {
+    const scope = await scopeFor(db, req.params.kind, req.params.id, "update");
+    ownGame(scope, req);
+    if (scope.round && scope.status !== "ended") return reject(409, "End this live session before clearing its results.");
+    const entries = await db.checkedEntry.findMany({
+      where: { scope: scope.scope, activeAt: { gt: activeSince() } },
+      select: { id: true },
+    });
+    if (entries.length && resultsVersion(entries) !== version)
+      return reject(409, "Results changed. Refresh Results before clearing.");
+    await db.checkedEntry.deleteMany({ where: { scope: scope.scope } });
+  });
+  return res.json({ ok: true });
+}));
+
 router.post("/:kind/:id/review", hostLimiter, trustedOrigin, authenticateString, route(async (req: AuthenticatedRequest<{ kind: string; id: string }>, res) => {
   const { entryId, index, requestId, decision } = req.body;
   if (typeof entryId !== "string" || !Number.isInteger(index) || !validToken(requestId) || !["approve", "return"].includes(decision))
     return reject(400, "Invalid review.");
   await prisma.$transaction(async (db) => {
-    const scope = await scopeFor(db, req.params.kind, req.params.id, true);
+    const scope = await scopeFor(db, req.params.kind, req.params.id, "share");
     ownGame(scope, req);
     if (scope.status !== "playing") return reject(409, "Session is closed for review.");
     await db.$queryRaw`SELECT id FROM checked_entries WHERE id = ${entryId} AND scope = ${scope.scope} FOR UPDATE`;

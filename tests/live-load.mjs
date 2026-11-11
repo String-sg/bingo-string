@@ -2,13 +2,19 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { control, guest, hostCookie, join, move, pause, request, results, review, state, target } from "./fixtures/checked-client.mjs";
 
-const id = "bingoloadround";
+const { body: fixture } = await request("/games/bingodemoboard", { host: hostCookie });
+const { body: board } = await request("/games", {
+  host: hostCookie, status: 201,
+  data: { name: "Live load rehearsal", gridSize: fixture.gridSize, checked: true, challenges: fixture.challengesJson },
+});
+const { body: { id } } = await request("/checked/boards/" + board.id + "/lobby", { host: hostCookie, data: {} });
 const students = Array.from({ length: 100 }, (_, i) => ({ token: guest(), name: `Load pupil ${i + 1}` }));
 const joins = [], writes = [], startDelays = [], endDelays = [];
 const errors = [];
 let running = true;
 let startAt, endAt;
 const path = "/checked/rounds/" + id;
+const { body: { pin } } = await request(path + "/lobby", { host: hostCookie });
 
 async function poll(student) {
   while (running) {
@@ -39,7 +45,7 @@ let pollers = [];
 try {
   await Promise.all(students.map(async (student, i) => {
     await pause(i * 100);
-    const response = await join(student.token, "600102", student.name);
+    const response = await join(student.token, pin, student.name);
     assert.equal(response.body.status, "waiting");
     joins.push(response.ms);
     pollers.push(poll(student));
@@ -69,7 +75,7 @@ try {
   assert.equal(waiting.length, 10);
   for (const player of waiting.slice(0, 5)) await review(id, player, player.pending[0]);
   await Promise.all(students.slice(0, 10).map(async (student) => {
-    await join(student.token, "600102", student.name);
+    await join(student.token, pin, student.name);
     const again = await play(student, "photo", 6, undefined, student.finalRequest);
     assert.equal(again.player.completedAt, student.firstResult.player.completedAt);
   }));

@@ -107,13 +107,15 @@ class BingoApp {
     async loadCustomGame(gameId) {
         try {
             console.log(`🎮 Loading custom game: ${gameId}`);
-            const response = await fetch(`${(await getConfig()).API_BASE_URL}/games/${gameId}/play`);
+            const preview = new URLSearchParams(location.search).has('preview');
+            const response = await fetch(`${(await getConfig()).API_BASE_URL}/games/${gameId}/play${preview ? '?preview=1' : ''}`);
 
             if (!response.ok) {
                 throw new Error('Game not found');
             }
 
             const game = await response.json();
+            this.boardVersion = game.updatedAt;
             console.log('🎮 Game loaded:', game);
 
             // Update page title
@@ -131,11 +133,11 @@ class BingoApp {
             await this.setupGrid(game.challengesJson, game.gridSize || 5);
 
             // Initialize session
-            if (!new URLSearchParams(location.search).has('preview')) {
+            if (!preview) {
                 if (game.checked) {
                     this.checked = new CheckedPlayer(this, gameId);
                     await this.checked.connect();
-                } else this.initializeSession();
+                } else await this.initializeSession();
             }
             else { const hint=document.createElement('p');hint.textContent='Board preview — no player entry is recorded.';document.querySelector('.footer')?.prepend(hint); }
 
@@ -312,10 +314,10 @@ class BingoApp {
             this.sessionId = session.sessionId;
             this.playerName = session.playerName;
             console.log(`Resuming session for ${this.playerName}`);
-            this.joinGameSession();
+            await this.joinGameSession();
         } else {
             // Prompt for name
-            this.modalManager.showNamePrompt((name) => {
+            this.modalManager.showNamePrompt(async (name) => {
                 this.playerName = name;
                 this.sessionId = crypto.randomUUID();
 
@@ -325,7 +327,7 @@ class BingoApp {
                     playerName: this.playerName
                 }));
 
-                this.joinGameSession();
+                await this.joinGameSession();
                 this.loadCellImages();
             });
         }
@@ -372,17 +374,16 @@ class BingoApp {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     sessionId: this.sessionId,
-                    playerName: this.playerName
+                    playerName: this.playerName,
+                    boardVersion: this.boardVersion
                 })
             });
 
-            if (response.ok) {
-                const session = await response.json();
-                console.log('Joined game session:', session);
-
-                // Restore progress if available (optional, for now we rely on local storage for immediate state)
-                // But we could sync from server here if we wanted cross-device support
-            }
+            if (response.status === 409) return location.reload();
+            if (!response.ok) return;
+            const session = await response.json();
+            this.legacyEntryId = session.id;
+            this.legacyProgress = session.progressJson;
         } catch (error) {
             console.error('Failed to join session:', error);
         }
@@ -421,15 +422,18 @@ class BingoApp {
 
             if (this.gameId) {
                 // Custom game progress
-                await fetch(`${(await getConfig()).API_BASE_URL}/games/${this.gameId}/progress`, {
+                if (!this.legacyEntryId) return;
+                const response = await fetch(`${(await getConfig()).API_BASE_URL}/games/${this.gameId}/progress`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         sessionId: this.sessionId,
+                        entryId: this.legacyEntryId,
                         progressJson: completedCells,
                         isCompleted
                     })
                 });
+                if (response.status === 404 || response.status === 409) location.reload();
             } else {
                 // Default game progress
                 await this.updateDefaultGameProgress(completedCells, isCompleted);
@@ -512,7 +516,7 @@ class BingoApp {
                 cell.style.backgroundSize = 'cover';
                 cell.style.backgroundPosition = 'center';
                 cell.classList.add('has-image');
-                if (restoreProgress) {
+                if (restoreProgress && (!this.legacyProgress || this.legacyProgress.includes(cellIndex))) {
                     this.bingoGrid.completedCells.add(cellIndex);
                     cell.classList.add('completed');
                     cell.setAttribute('aria-pressed','true');

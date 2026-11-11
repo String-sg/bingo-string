@@ -552,9 +552,6 @@ html {
 .admin-dashboard {
     background: var(--background-color);
     min-height: 100vh;
-    padding: 0;
-    margin: -30px -20px -20px -20px;
-    /* Remove body padding when in admin mode */
 }
 
 .admin-header {
@@ -579,9 +576,10 @@ html {
 }
 
 .admin-create-btn {
-    position: absolute;
-    top: 40px;
-    right: 20px;
+    margin-inline: 0;
+    background: var(--text-dark);
+    color: var(--primary-color);
+    border: 2px solid var(--text-dark);
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -594,7 +592,7 @@ html {
 }
 
 .admin-content {
-    padding: 40px 20px;
+    padding-block: 40px;
     max-width: 1200px;
     margin: 0 auto;
 }
@@ -649,6 +647,65 @@ html {
     gap: 8px;
 }
 
+.game-card h3 {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.game-actions .game-card-start {
+    grid-column: 1 / -1;
+}
+
+.game-card-tools {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.game-card-tools .btn {
+    display: grid;
+    place-items: center;
+    flex: 0 0 44px;
+    min-height: 44px;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--primary-color);
+}
+
+.game-card-tools .btn-outline {
+    border-color: var(--primary-color);
+}
+
+.game-card-tools .btn-outline:hover {
+    background: rgba(117, 248, 204, 0.12);
+    color: var(--primary-color);
+}
+
+.game-card-tools .game-card-delete {
+    color: var(--text-primary);
+}
+
+.game-card-tools .game-card-delete:is(:hover, :active) {
+    background: rgba(244, 67, 54, 0.12);
+    color: #ff8178;
+}
+
+.game-card-tools .btn:focus-visible {
+    outline-color: var(--primary-color);
+}
+
+.game-actions .game-card-preview {
+    background: transparent;
+    border-color: #a9b0b1;
+    color: var(--text-secondary);
+}
+
+.game-actions .game-card-preview:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+}
+
 .game-actions > .btn {
     display: grid;
     place-items: center;
@@ -676,14 +733,13 @@ html {
     }
 
     .admin-create-btn {
-        position: static;
         margin-top: 20px;
         width: 100%;
         justify-content: center;
     }
 
     .admin-content {
-        padding: 30px 20px;
+        padding-block: 30px;
     }
 
     .empty-state {

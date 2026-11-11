@@ -309,3 +309,79 @@ test("empty and unparsed request bodies still reach route validation", async () 
     }
   }
 });
+
+test("editor and clear results protect active play, ownership and stale confirmations", async () => {
+  const challenges = Array.from({ length: 9 }, (_, i) => ({ id: `q${i}`, text: `Prompt ${i}`, mode: "photo" }));
+  const request = (path: string, method: string, data?: unknown, identity = a, extra = {}) =>
+    fetch(base + path, { method, headers: { ...headers(identity), ...extra }, body: JSON.stringify(data) });
+  const created = await request("/api/games", "POST", { name: "Management", checked: true, gridSize: 3, challenges });
+  assert.equal(created.status, 201);
+  const game = await created.json() as { id: string; updatedAt: string };
+  const editor = `/api/games/${game.id}/editor`;
+  const board = `/api/checked/boards/${game.id}`;
+  const edit = { name: "Edited", gridSize: 3, challenges, version: game.updatedAt };
+  assert.equal((await fetch(base + editor)).status, 401);
+  assert.equal((await request(editor, "GET", undefined, b)).status, 403);
+  assert.equal((await request(editor, "PUT", edit, b)).status, 403);
+  const writes = await Promise.all([request(editor, "PUT", edit), request(editor, "PUT", { ...edit, name: "Stale edit" })]);
+  assert.deepEqual(writes.map((response) => response.status).sort(), [200, 409]);
+  edit.version = (await (await request(editor, "GET")).json() as { updatedAt: string }).updatedAt;
+  assert.equal((await request(board + "/join", "POST", { nickname: "Stale board", boardVersion: game.updatedAt }, a,
+    { "x-bingo-player": crypto.randomUUID() })).status, 409);
+
+  const round = await prisma.liveRound.create({ data: { gameId: game.id, pin: "736101", closesAt: new Date(Date.now() + 600000) } });
+  const otherRound = await prisma.liveRound.create({ data: { gameId: game.id, pin: "736102", closesAt: new Date(Date.now() + 600000) } });
+  const live = `/api/checked/rounds/${round.id}`;
+  const player = { "x-bingo-player": crypto.randomUUID() };
+  const next = { "x-bingo-player": crypto.randomUUID() };
+  const result = async (scope: string) => await (await request(scope + "/results", "GET")).json() as { clearVersion: string; players: { nickname: string }[] };
+  assert.equal((await request(editor, "PUT", edit)).status, 409);
+  assert.equal((await request("/api/checked/join", "POST", { pin: round.pin, nickname: "Live pupil" }, a, player)).status, 200);
+  assert.equal((await request("/api/checked/join", "POST", { pin: otherRound.pin, nickname: "Other class" }, a, next)).status, 200);
+  const liveVersion = (await result(live)).clearVersion;
+  assert.equal((await request(live + "/results/clear", "POST", { version: liveVersion })).status, 409);
+  assert.equal((await request(live + "/control", "POST", { action: "start" })).status, 200);
+  assert.equal((await request(live + "/results/clear", "POST", { version: liveVersion })).status, 409);
+  assert.equal((await request(board + "/join", "POST", { nickname: "Board pupil" }, a, player)).status, 200);
+  assert.equal((await request(live + "/control", "POST", { action: "end" })).status, 200);
+  assert.equal((await request(live + "/results/clear", "POST", { version: liveVersion }, b)).status, 403);
+  assert.equal((await request(live + "/results/clear", "POST", { version: liveVersion }, "invalid")).status, 401);
+  assert.equal((await request(live + "/results/clear", "POST", { version: liveVersion })).status, 200);
+  assert.equal((await result(live)).players.length, 0);
+  assert.equal((await result(board)).players[0].nickname, "Board pupil");
+  assert.equal((await result(`/api/checked/rounds/${otherRound.id}`)).players[0].nickname, "Other class");
+  assert.equal((await request("/api/checked/join", "POST", { pin: round.pin, nickname: "Late" }, a, player)).status, 410);
+
+  const boardVersion = (await result(board)).clearVersion;
+  assert.equal((await request(board + "/results/clear", "POST", { version: boardVersion })).status, 200);
+  assert.equal((await request(board + "/join", "POST", { nickname: "New pupil" }, a, next)).status, 200);
+  assert.equal((await request(board + "/results/clear", "POST", { version: boardVersion })).status, 409);
+  assert.equal((await result(board)).players[0].nickname, "New pupil");
+  assert.equal((await request(board + "/action", "POST", { requestId: crypto.randomUUID(), action: "photo", index: 0 }, a, player)).status, 404);
+  await prisma.game.delete({ where: { id: game.id } });
+});
+
+test("legacy results clear keeps the board and rejects progress from the cleared entry", async () => {
+  const challenges = Array.from({ length: 9 }, (_, i) => ({ id: `q${i}`, text: `Legacy prompt ${i}` }));
+  const owner = await prisma.user.findUnique({ where: { stringMemberId: alice } });
+  const game = await prisma.game.create({ data: { name: "Legacy clear", creatorId: owner.id, gridSize: 3, challengesJson: challenges } });
+  const path = `${base}/api/games/${game.id}`;
+  const post = (suffix: string, data: unknown) => fetch(path + suffix, { method: "POST", headers: headers(), body: JSON.stringify(data) });
+  const sessionId = crypto.randomUUID();
+  const join = () => post("/join", { sessionId, playerName: "Legacy pupil" });
+  const entry = await (await join()).json() as { id: string };
+  const progress = { sessionId, entryId: entry.id, progressJson: [0, 1, 2] };
+  assert.equal((await post("/progress", progress)).status, 200);
+  const results = await fetch(path + "/results", { headers: headers() });
+  assert.equal((await results.json()).length, 1);
+  const version = results.headers.get("X-Bingo-Results-Version");
+  assert.equal((await post("/results/clear", { version })).status, 200);
+  assert.equal((await post("/progress", progress)).status, 404);
+  const fresh = await (await join()).json() as { id: string; progressJson: number[] };
+  assert.notEqual(fresh.id, entry.id);
+  assert.deepEqual(fresh.progressJson, []);
+  assert.equal((await post("/progress", progress)).status, 409);
+  assert.equal((await post("/results/clear", { version })).status, 409);
+  assert.equal((await fetch(path + "/play")).status, 200);
+  await prisma.game.delete({ where: { id: game.id } });
+});

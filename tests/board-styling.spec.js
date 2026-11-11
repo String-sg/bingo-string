@@ -79,7 +79,7 @@ test('default board labels stay readable through photo, bingo and reset', async 
 test('narrow shared board wraps long prompts and keeps keyboard focus visible', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   const longWord = 'Long'.repeat(30);
-  await page.route('**/api/games/layout-fixture/play', route => route.fulfill({
+  await page.route('**/api/games/layout-fixture/play?preview=1', route => route.fulfill({
     json: {
       name: 'Shared board', creator: { name: 'Bingo host' }, gridSize: 3,
       challengesJson: Array.from({ length: 9 }, () => ({ text: longWord })),
