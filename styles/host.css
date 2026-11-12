@@ -289,6 +289,10 @@ textarea:focus-visible {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.host-account-icon,
+.host-account-name {
+  display: none;
+}
 .host-account-actions {
   position: absolute;
   z-index: 110;
@@ -318,6 +322,31 @@ textarea:focus-visible {
 .board-page .host-account-actions button:focus-visible {
   outline: 2px solid #206d55;
   outline-offset: -2px;
+}
+
+@media (max-width: 600px) {
+  .host-account #hostName,
+  .host-account summary::after {
+    display: none;
+  }
+  .host-account summary {
+    justify-content: center;
+    min-width: 44px;
+    padding: 0;
+  }
+  .host-account-icon,
+  .host-account-name {
+    display: block;
+  }
+  .host-account-name {
+    max-width: 12rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #bbc7b9;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .editor-tile, .live-form {

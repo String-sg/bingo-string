@@ -14,8 +14,16 @@
         <a href="/" class="brand">bingo</a>
         <nav aria-label="Host navigation">
           <details class="host-account" id="hostIdentity" hidden>
-            <summary><span id="hostName"></span></summary>
+            <summary>
+              <span id="hostName"></span>
+              <svg class="host-account-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="10" r="3" />
+                <path d="M6 20a6 6 0 0 1 12 0" />
+              </svg>
+            </summary>
             <div class="host-account-actions">
+              <div class="host-account-name"></div>
               <button type="button" id="myGamesBtn">My games</button>
               <button type="button" id="stringLogoutBtn">Sign out of String ID</button>
             </div>
