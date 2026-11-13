@@ -45,7 +45,7 @@
         "@types/cors": "^2.8.17",
         "@types/express": "^5.0.3",
         "@types/morgan": "^1.9.9",
-        "@types/node": "^24.19.2",
+        "@types/node": "^26.6.6",
         "gh-pages": "^6.0.0",
         "prisma": "^6.19.3",
         "rollup": "4.59.0"
