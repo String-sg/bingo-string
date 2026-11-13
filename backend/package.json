@@ -27,7 +27,7 @@
     "@types/morgan": "^1.9.9",
     "@types/node": "^24.19.2",
     "prisma": "^6.19.3",
-    "tsx": "^4.6.2",
+    "tsx": "^4.23.15",
     "typescript": "^5.3.3"
   },
   "keywords": [
