@@ -37,9 +37,6 @@
 .board-page .brand {
   color: var(--text-primary);
 }
-.board-page .host-header :focus-visible {
-  outline-color: var(--primary-color);
-}
 .board-page .host-header .btn {
   margin: 0;
   min-height: 44px;
@@ -115,6 +112,16 @@
   margin: 0.8rem 0;
 }
 .host-shell input:not([type="radio"]),
+.host-shell textarea,
+.host-shell select,
+.host-dialog input,
+.live-form input {
+  border: 1px solid var(--primary-color-strong);
+  border-radius: var(--control-radius);
+  background: #fff;
+  color: #20352d;
+}
+.host-shell input:not([type="radio"]),
 .host-shell textarea {
   display: block;
   width: 100%;
@@ -123,10 +130,6 @@
   font-size: 1rem;
   margin: 0.4rem 0;
   padding: 0.8rem;
-  border: 1px solid #9eaea0;
-  border-radius: 8px;
-  background: #fff;
-  color: #20352d;
 }
 .host-shell fieldset {
   margin-top: 1.5rem;
@@ -149,6 +152,12 @@
 }
 .host-toolbar input[type="file"] {
   max-width: 100%;
+}
+.host-toolbar input[type="file"]::file-selector-button {
+  border: 0;
+  border-radius: var(--control-radius);
+  background: var(--primary-color);
+  color: var(--text-dark);
 }
 .host-error {
   color: #a12828;
@@ -203,12 +212,16 @@
   border-bottom: 1px solid #ddd;
   overflow-wrap: anywhere;
 }
+.btn:focus-visible,
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
-textarea:focus-visible {
-  outline: 3px solid #206d55;
-  outline-offset: 3px;
+select:focus-visible,
+textarea:focus-visible,
+.host-account summary:focus-visible {
+  outline: 2px solid var(--primary-color-strong);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--primary-color);
 }
 .close {
   background: transparent;
@@ -235,15 +248,6 @@ textarea:focus-visible {
   }
 }
 
-.btn-outline {
-  color: #174b38;
-  background: #fff;
-  border-color: #267257;
-}
-.btn-outline:hover {
-  color: #174b38;
-  background: #edf8ef;
-}
 .steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -264,7 +268,7 @@ textarea:focus-visible {
   gap: 0.55rem;
   min-height: 44px;
   padding: 0 0.5rem;
-  border-radius: 8px;
+  border-radius: var(--control-radius);
   font-weight: 600;
   list-style: none;
   cursor: pointer;
@@ -278,11 +282,6 @@ textarea:focus-visible {
   border-bottom: 2px solid;
   transform: translateY(-25%) rotate(45deg);
 }
-.host-account summary:focus-visible {
-  outline: 3px solid #206d55;
-  outline-offset: 2px;
-}
-.board-page .host-account summary:focus-visible { outline-color: var(--primary-color); }
 #hostName {
   max-width: clamp(5.5rem, 18vw, 9rem);
   overflow: hidden;
@@ -311,18 +310,14 @@ textarea:focus-visible {
   min-height: 44px;
   padding: 0.5rem 0.75rem;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--control-radius);
   background: transparent;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
-.host-account-actions button:hover { background: #edf8ef; }
-.board-page .host-account-actions button:focus-visible {
-  outline: 2px solid #206d55;
-  outline-offset: -2px;
-}
+.host-account-actions button:hover { background: var(--primary-color); }
 
 @media (max-width: 600px) {
   .host-account #hostName,
@@ -357,8 +352,6 @@ textarea:focus-visible {
 .editor-tile select, .editor-tile textarea, .live-form input {
   width: 100%;
   padding: .55rem;
-  border: 1px solid #777;
-  border-radius: .4rem;
   font: inherit;
 }
 

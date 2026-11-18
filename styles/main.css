@@ -1,10 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap');
 @import url('https://unpkg.com/modern-normalize@2.0.0/modern-normalize.css');
+@import './theme.css';
 
 :root {
     /* String Branding Colors */
-    --primary-color: #75F8CC;
-    --primary-color-hover: #5ED4B0;
     --secondary-color: #C0F4FB;
     --background-color: #33373B;
     --text-primary: #FFFFFF;
@@ -295,6 +294,7 @@ html {
     float: right;
     font-size: 28px;
     font-weight: bold;
+    border-radius: var(--control-radius);
     cursor: pointer;
     transition: color var(--transition-fast);
 }
@@ -307,34 +307,25 @@ html {
     padding: 10px 20px;
     margin: 5px;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--control-radius);
     cursor: pointer;
     font-family: var(--font-body);
     font-weight: 500;
-    transition: all var(--transition-fast);
+    transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
     text-decoration: none;
     display: inline-block;
     text-align: center;
 }
 
-.btn-primary {
+.btn-primary,
+.btn-secondary {
     background: var(--primary-color);
     color: var(--text-dark);
 }
 
-.btn-primary:hover {
-    background: var(--primary-color-hover);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-medium);
-}
-
-.btn-secondary {
-    background: var(--secondary-color);
-    color: var(--text-dark);
-}
-
+.btn-primary:hover,
 .btn-secondary:hover {
-    background: #A8E8F0;
+    background: var(--primary-color-hover);
     transform: translateY(-1px);
     box-shadow: var(--shadow-medium);
 }
@@ -351,9 +342,9 @@ html {
 }
 
 .btn-outline {
-    background: transparent;
-    color: var(--text-primary);
-    border: 2px solid var(--primary-color);
+    background: #fff;
+    color: var(--primary-color-strong);
+    border: 2px solid var(--primary-color-strong);
 }
 
 .btn-outline:hover {
@@ -378,16 +369,14 @@ html {
     width: 100%;
     padding: 10px;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 5px;
+    border-radius: var(--control-radius);
     background: rgba(255, 255, 255, 0.1);
     color: var(--text-primary);
     font-family: var(--font-body);
 }
 
 .form-group input:focus {
-    outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(117, 248, 204, 0.2);
 }
 
 .camera-container {
@@ -461,15 +450,11 @@ html {
     gap: 10px;
 }
 
-.button-row :focus-visible {
-    outline-color: var(--primary-color);
-}
-
 /* Recenter Button */
 .btn-recenter {
     width: 44px;
     min-height: 44px;
-    border-radius: 8px;
+    border-radius: var(--control-radius);
     background: var(--primary-color);
     color: var(--text-dark);
     border: none;
@@ -477,7 +462,7 @@ html {
     display: none;
     align-items: center;
     justify-content: center;
-    transition: all var(--transition-fast);
+    transition: transform var(--transition-fast);
 }
 
 .btn-recenter:active {
@@ -599,12 +584,6 @@ html {
     display: flex;
     align-items: center;
     gap: 8px;
-}
-
-.admin-create-btn:hover {
-    background: transparent;
-    color: var(--text-dark);
-    border-color: var(--text-dark);
 }
 
 .btn-icon {
@@ -862,7 +841,7 @@ html {
     width: 100%;
     padding: 12px 16px;
     border: 2px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
+    border-radius: var(--control-radius);
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-primary);
     font-size: 1rem;
@@ -870,7 +849,6 @@ html {
 }
 
 .form-group input:focus {
-    outline: none;
     border-color: var(--primary-color);
     background: rgba(255, 255, 255, 0.08);
 }
@@ -906,7 +884,7 @@ html {
     aspect-ratio: 1;
     background: rgba(255, 255, 255, 0.05);
     border: 2px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
+    border-radius: var(--control-radius);
     padding: 8px;
     resize: none;
     font-family: var(--font-body);
@@ -918,7 +896,6 @@ html {
 }
 
 .editor-cell:focus {
-    outline: none;
     border-color: var(--primary-color);
     background: rgba(255, 255, 255, 0.08);
 }

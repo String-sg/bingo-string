@@ -1,7 +1,8 @@
+@import './theme.css';
+
 .landing {
   --landing-dark: #24272b;
   --landing-ink: #33373b;
-  --landing-mint: #75f8cc;
   --landing-paper: #f6f8f7;
   --landing-display: "Space Grotesk", system-ui, sans-serif;
   margin: 0;
@@ -18,7 +19,7 @@
 .landing :is(h1, h2, h3) { font-family: var(--landing-display); line-height: 1.1; }
 
 .landing a:focus-visible {
-  outline: 2px solid var(--landing-mint);
+  outline: 2px solid var(--primary-color);
   outline-offset: 4px;
 }
 
@@ -44,7 +45,7 @@
   align-items: center;
   gap: .35rem;
   min-height: 44px;
-  color: var(--landing-mint);
+  color: var(--primary-color);
   font-size: .875rem;
   font-weight: 600;
   text-underline-offset: .22em;
@@ -88,16 +89,16 @@
   min-height: 44px;
   padding: .7rem 1.05rem;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--control-radius);
   font-size: .9375rem;
   font-weight: 700;
   text-decoration: none;
 }
 
-.landing-button-primary { background: var(--landing-mint); color: var(--landing-dark); }
-.landing-button-primary:hover { background: #acfbe1; }
-.landing-button-outline { border-color: #8c9c97; color: var(--landing-paper); }
-.landing-button-outline:hover { border-color: var(--landing-mint); background: #333b3a; }
+.landing-button-primary { background: var(--primary-color); color: var(--landing-dark); }
+.landing-button-primary:hover { background: var(--primary-color-hover); }
+.landing-button-outline { border-color: var(--primary-color); color: var(--landing-paper); }
+.landing-button-outline:hover { background: var(--primary-color); color: var(--landing-dark); }
 .landing-intro .landing-note { margin-top: .85rem; font-size: .875rem; }
 
 .landing-example {
