@@ -21,6 +21,7 @@ Any String member can host; returning Google hosts retain their games.
 **Acceptance Scenarios**:
 
 1. **Given** a signed-in member or existing game owner, **When** they open My Games, **Then** their own games remain accessible and other owners cannot mutate them.
+2. **Given** a signed-in host on the board at 320 or 390 CSS px, **When** they open the account icon, **Then** the wordmark, Host a game and the 44 × 44 px account target share one row. The menu stays inside the viewport and shows their name, My games and Sign out of String ID.
 
 ### User Story 2 - Create and share a first game (Priority: P2)
 

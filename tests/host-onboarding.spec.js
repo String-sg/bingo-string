@@ -13,24 +13,48 @@ async function host(context) {
 }
 
 test("the account menu keeps host actions reachable on a narrow screen", async ({ page, context }) => {
-  await page.setViewportSize({ width: 320, height: 720 });
+  await page.setViewportSize({ width: 390, height: 720 });
   await host(context);
   await page.goto("/play");
   const account = page.locator("#hostIdentity summary");
+  const brand = page.getByRole("banner").getByRole("link", { name: "bingo", exact: true });
+  const hostButton = page.getByRole("button", { name: "Host a game", exact: true });
+  const accountName = page.locator(".host-account-name");
   const myGames = page.getByRole("button", { name: "My games" });
   const signOut = page.getByRole("button", { name: "Sign out of String ID" });
-  await expect(account).toHaveText("Browser host");
-  await expect(account).toBeVisible();
-  await expect(page.getByRole("button", { name: "Host a game" })).toBeVisible();
+  await expect(account).toHaveAccessibleName("Account menu for Browser host");
+  await expect(account.locator("svg")).toBeVisible();
+  await expect(account.locator("#hostName")).toBeHidden();
   await expect(myGames).toBeHidden();
   await expect(signOut).toBeHidden();
+
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 720 });
+    const [wordmark, hostAction, accountAction] = await Promise.all(
+      [brand, hostButton, account].map((control) => control.boundingBox()),
+    );
+    expect(wordmark.y + wordmark.height / 2).toBeCloseTo(hostAction.y + hostAction.height / 2, 0);
+    expect(accountAction.y + accountAction.height / 2).toBeCloseTo(hostAction.y + hostAction.height / 2, 0);
+    expect(hostAction.x).toBeGreaterThanOrEqual(wordmark.x + wordmark.width);
+    expect(accountAction.x).toBeGreaterThanOrEqual(hostAction.x + hostAction.width + 8);
+    expect(accountAction.x + accountAction.width).toBeLessThanOrEqual(width);
+    expect(hostAction.height).toBeGreaterThanOrEqual(44);
+    expect(accountAction.width).toBeGreaterThanOrEqual(44);
+    expect(accountAction.height).toBeGreaterThanOrEqual(44);
+
+    await account.click();
+    await expect(accountName).toHaveText("Browser host");
+    await expect(accountName).toBeVisible();
+    await expect(signOut).toBeVisible();
+    const panel = await page.locator(".host-account-actions").boundingBox();
+    expect(panel.x).toBeGreaterThanOrEqual(0);
+    expect(panel.x + panel.width).toBeLessThanOrEqual(width);
+    await account.click();
+  }
 
   await account.focus();
   await page.keyboard.press("Enter");
   await expect(myGames).toBeVisible();
-  const panel = await page.locator(".host-account-actions").boundingBox();
-  expect(panel.x).toBeGreaterThanOrEqual(0);
-  expect(panel.x + panel.width).toBeLessThanOrEqual(320);
   await page.keyboard.press("Tab");
   await expect(myGames).toBeFocused();
   await page.keyboard.press("Escape");

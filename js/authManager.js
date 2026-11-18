@@ -122,11 +122,13 @@ export class AuthManager {
   updateUI() {
     const identity = document.getElementById("hostIdentity");
     if (identity) {
+      const name = this.user?.name || "String member";
+      identity.querySelector("summary").setAttribute("aria-label", `Account menu for ${name}`);
+      identity.querySelector("#hostName").textContent = name;
+      identity.querySelector(".host-account-name").textContent = name;
       identity.hidden = !this.user;
       if (!this.user) identity.open = false;
     }
-    const name = document.getElementById("hostName");
-    if (name) name.textContent = this.user?.name || "String member";
   }
   async beginHost() {
     await this.ready;
